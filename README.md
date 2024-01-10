@@ -1,6 +1,6 @@
 # Toolly - Your Personal Toolbox
 
-![Badge](https://img.shields.io/badge/version-1.0.0-blue.svg) ![Badge](https://img.shields.io/badge/status-in%20development-orange.svg) ![Badge](https://img.shields.io/badge/license-MIT-green.svg) ![MySQL](https://img.shields.io/badge/MySQL-Database-blue)
+![Badge](https://img.shields.io/badge/version-0.1.0-blue.svg) ![Badge](https://img.shields.io/badge/status-in%20development-orange.svg) ![Badge](https://img.shields.io/badge/license-MIT-green.svg) ![MySQL](https://img.shields.io/badge/MySQL-Database-blue)
 
 ## Table of Contents
 
