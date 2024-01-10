@@ -6,7 +6,6 @@
 
 - [English](#english)
   - [Features](#features)
-  - [Preview](#preview)
   - [Quick Start](#quick-start)
   - [Technologies Used](#technologies-used)
   - [Contribution](#contribution)
@@ -14,7 +13,6 @@
   - [Contact](#contact)
 - [Français](#français)
   - [Fonctionnalités](#fonctionnalités)
-  - [Aperçu](#aperçu)
   - [Démarrage Rapide](#démarrage-rapide)
   - [Technologies Utilisées](#technologies-utilisées)
   - [Contribution](#contribution-1)
@@ -33,10 +31,6 @@ Toolly is an interactive web application designed to simplify your daily task ma
 - **Todo-List**: Manage your tasks with an interactive list.
 - **Sticky Notes**: Jot down your important thoughts and ideas in a click.
 - **Customizable Interface**: Customize the interface according to your preferences.
-
-### Preview
-
-![Preview of Toolly](link-to-preview-image)
 
 ### Quick Start
 
