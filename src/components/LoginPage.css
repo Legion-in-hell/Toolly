@@ -1,0 +1,57 @@
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  .login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #121212; /* Couleur de fond en mode sombre */
+  }
+  
+  .login-form {
+    width: 300px;
+    padding: 40px;
+    background: #1e1e1e;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    color: #ffffff;
+  }
+  
+  .login-form h1 {
+    text-align: center;
+    margin-bottom: 24px;
+    color: #0a69c9;
+  }
+  
+  .login-form input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    border: 1px solid #333;
+    background-color: #333;
+    color: white;
+  }
+  
+  .login-form button {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #0a69c9;
+    color: black;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  
+  .login-form button:hover {
+    background-color: #0a69c9;
+  }
+  
