@@ -1,70 +1,118 @@
-# Getting Started with Create React App
+# Toolly - Your Personal Toolbox
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+![Badge](https://img.shields.io/badge/version-1.0.0-blue.svg) ![Badge](https://img.shields.io/badge/status-in%20development-orange.svg) ![Badge](https://img.shields.io/badge/license-MIT-green.svg) ![MySQL](https://img.shields.io/badge/MySQL-Database-blue)
 
-## Available Scripts
+## Table of Contents
 
-In the project directory, you can run:
+- [English](#english)
+  - [Features](#features)
+  - [Preview](#preview)
+  - [Quick Start](#quick-start)
+  - [Technologies Used](#technologies-used)
+  - [Contribution](#contribution)
+  - [License](#license)
+  - [Contact](#contact)
+- [Français](#français)
+  - [Fonctionnalités](#fonctionnalités)
+  - [Aperçu](#aperçu)
+  - [Démarrage Rapide](#démarrage-rapide)
+  - [Technologies Utilisées](#technologies-utilisées)
+  - [Contribution](#contribution-1)
+  - [Licence](#licence)
+  - [Contact](#contact-1)
 
-### `npm start`
+---
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## English
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+Toolly is an interactive web application designed to simplify your daily task management. With its intuitive user interface, Toolly combines several essential tools including a drawing space, a todo-list system, and a sticky note feature, all integrated into an elegant and user-friendly dashboard.
 
-### `npm test`
+### Features
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- **Drawing Space**: An intuitive tool for sketching out your ideas.
+- **Todo-List**: Manage your tasks with an interactive list.
+- **Sticky Notes**: Jot down your important thoughts and ideas in a click.
+- **Customizable Interface**: Customize the interface according to your preferences.
 
-### `npm run build`
+### Preview
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+![Preview of Toolly](link-to-preview-image)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Quick Start
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+To get Toolly running locally, follow these steps:
 
-### `npm run eject`
+```bash
+git clone https://github.com/[Your-Username]/Toolly.git
+cd Toolly
+npm install
+npm start
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+Your application should now be running on localhost:3000.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Technologies Used
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+- React.js
+- Material-UI
+- React Router
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Contribution
 
-## Learn More
+Contributions are always welcome! To contribute to the project, please follow these steps:
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- Fork the project
+- Create your feature branch (git checkout -b feature/AmazingFeature)
+- Commit your changes (git commit -m 'Add some AmazingFeature')
+- Push to the branch (git push origin feature/AmazingFeature)
+- Open a Pull Request
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## License
 
-### Code Splitting
+Distributed under the MIT License. See LICENSE for more information.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## Français
 
-### Analyzing the Bundle Size
+# Toolly - Votre Boîte à Outils Personnelle
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+Toolly est une application web interactive conçue pour faciliter la gestion de vos tâches quotidiennes. Avec son interface utilisateur intuitive, Toolly combine plusieurs outils essentiels, dont un espace de dessin, un système de todo-list et un pense-bête, le tout intégré dans un tableau de bord élégant et facile à utiliser.
 
-### Making a Progressive Web App
+## Fonctionnalités
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+- **Espace de Dessin** : Un outil intuitif pour esquisser vos idées.
+- **Todo-List** : Gérez vos tâches avec une liste interactive.
+- **Pense-Bête** : Notez vos pensées et idées importantes en un clic.
+- **Interface Personnalisable** : Personnalisez l'interface selon vos préférences.
 
-### Advanced Configuration
+## Démarrage Rapide
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+Pour lancer Toolly localement, suivez ces étapes :
 
-### Deployment
+```bash
+git clone https://github.com/[Votre-Username]/Toolly.git
+cd Toolly
+npm install
+npm start
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+Votre application devrait maintenant être en cours d'exécution sur localhost:3000.
 
-### `npm run build` fails to minify
+## Technologies Utilisées
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+- React.js
+- Material-UI
+- React Router
+
+## Contribution
+
+Les contributions sont toujours les bienvenues! Pour contribuer au projet, veuillez suivre ces étapes :
+
+- Forker le projet
+- Créer votre branche de fonctionnalité (git checkout -b feature/AmazingFeature)
+- Committer vos changements (git commit -m 'Add some AmazingFeature')
+- Push vers la branche (git push origin feature/AmazingFeature)
+- Ouvrir une Pull Request
+
+## Licence
+
+Distribué sous la licence MIT. Voir LICENSE pour plus d'informations.
