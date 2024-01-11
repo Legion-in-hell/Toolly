@@ -83,7 +83,8 @@ app.get('/protected', authenticateToken, (req, res) => {
   res.send(`Bienvenue ${req.user.username}, vous avez accès à la route protégée.`);
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3306;
 app.listen(PORT, () => {
   console.log(`Serveur démarré sur le port ${PORT}`);
 });
+

@@ -8,16 +8,21 @@ function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
-  const auth = useAuth();
+  const { login } = useAuth();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      const response = await axios.post('/api/login', { username, password });
-      auth.login(response.data.token);
-      navigate('/');
+      axios.post('http://localhost:3001/api/login', { username, password })
+        .then(response => {
+          login(response.data.token);
+          navigate('/'); 
+        })
+        .catch(error => {
+          console.error('Erreur de connexion', error);
+        });
     } catch (error) {
-      console.error('Erreur de connexion', error);
+      console.error('Erreur lors du traitement de la connexion', error);
     }
   };
 
