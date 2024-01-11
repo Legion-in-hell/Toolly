@@ -37,7 +37,7 @@ Toolly is an interactive web application designed to simplify your daily task ma
 To get Toolly running locally, follow these steps:
 
 ```bash
-git clone https://github.com/[Your-Username]/Toolly.git
+git clone https://github.com/Legion-in-hell/Toolly.git
 cd Toolly
 npm install
 npm start
@@ -85,7 +85,7 @@ Toolly est une application web interactive conçue pour faciliter la gestion de 
 Pour lancer Toolly localement, suivez ces étapes :
 
 ```bash
-git clone https://github.com/[Votre-Username]/Toolly.git
+git clone https://github.com/Legion-in-hell/Toolly.git
 cd Toolly
 npm install
 npm start
