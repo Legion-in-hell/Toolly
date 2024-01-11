@@ -1,46 +1,38 @@
-import React, { useState } from 'react';
-import Dashboard from './components/Dashboard';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { BrowserRouter as Router } from 'react-router-dom';
+import { AuthProvider } from './AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './components/LoginPage';
-import TodoList from './components/TodoList';
+import Dashboard from './components/Dashboard';
+
 
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
-    // Vous pouvez personnaliser davantage les couleurs ici
   },
 });
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const handleLogin = (username, password) => {
-    // Ici, vous pouvez ajouter votre logique de vérification d'authentification
-    // Par exemple, vérifier contre un backend ou une liste d'utilisateurs
-    // Pour cet exemple, nous allons simplement simuler une authentification réussie
-    setIsAuthenticated(true);
-  }
   return (
-
-    <>
-      {!isAuthenticated ? (
-        <LoginPage onLogin={handleLogin} />
-      ) : (
-    <Router>
     <ThemeProvider theme={darkTheme}>
       <CssBaseline />
-      <Dashboard />
-      <h1>Ma Todo List</h1>
-      <TodoList />
+      <AuthProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            {/* Ajouter d'autres routes protégées ici */}
+          </Routes>
+        </Router>
+      </AuthProvider>
     </ThemeProvider>
-    </Router>
-
-      )}
-    </>
-
   );
 }
 
 export default App;
-

@@ -1,13 +1,24 @@
 import React, { useState } from 'react';
-import './LoginPage.css'; // Import du fichier CSS
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../AuthContext';
+import './LoginPage.css';
 
-function LoginPage({ onLogin }) {
+function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const navigate = useNavigate();
+  const auth = useAuth();
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    onLogin(username, password);
+    try {
+      const response = await axios.post('/api/login', { username, password });
+      auth.login(response.data.token);
+      navigate('/');
+    } catch (error) {
+      console.error('Erreur de connexion', error);
+    }
   };
 
   return (
