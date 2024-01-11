@@ -50,6 +50,8 @@ Your application should now be running on localhost:3000.
 - React.js
 - Material-UI
 - React Router
+- Axios
+- Mysql2
 
 ## Contribution
 
@@ -96,6 +98,8 @@ Votre application devrait maintenant être en cours d'exécution sur localhost:3
 - React.js
 - Material-UI
 - React Router
+- Axios
+- Mysql2
 
 ## Contribution
 
