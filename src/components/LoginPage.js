@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
@@ -11,10 +11,18 @@ import { Link as RouterLink } from "react-router-dom";
 import Link from "@mui/material/Link";
 
 function LoginPage() {
+  const { isAuthenticated } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      navigate("/");
+    }
+  }, [navigate]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -24,7 +32,9 @@ function LoginPage() {
         password,
       });
       login(response.data.token);
-      navigate("/");
+      if (isAuthenticated) {
+        navigate("/");
+      }
     } catch (error) {
       console.error("Erreur de connexion", error);
     }
@@ -72,13 +82,13 @@ function LoginPage() {
           >
             Se Connecter
           </Button>
+          <Typography variant="body2" style={{ marginTop: "20px" }}>
+            Pas encore de compte?{" "}
+            <Link component={RouterLink} to="/signup">
+              Inscrivez-vous
+            </Link>
+          </Typography>
         </Box>
-        <Typography variant="body2" style={{ marginTop: "20px" }}>
-          Pas encore de compte?{" "}
-          <Link component={RouterLink} to="/signup">
-            Inscrivez-vous
-          </Link>
-        </Typography>
       </Box>
     </Container>
   );

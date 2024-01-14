@@ -14,15 +14,24 @@ function SignUpPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      // TODO: Envoyer les données au serveur
       await axios.post("http://localhost:3001/api/signup", {
         username,
         email,
         password,
       });
-      navigate("/login"); // Redirige vers la page de connexion après l'inscription
+      navigate("/login");
     } catch (error) {
-      console.error("Erreur lors de l`'inscription", error);
+      if (error.response) {
+        // La requête a été faite et le serveur a répondu avec un statut d'erreur
+        console.error("Erreur lors de l'inscription :", error.response.data);
+        alert("Erreur d'inscription: " + error.response.data.message); // Afficher un message d'erreur à l'utilisateur
+      } else if (error.request) {
+        // La requête a été faite mais aucune réponse n'a été reçue
+        console.error("Le serveur ne répond pas :", error.request);
+      } else {
+        // Quelque chose s'est mal passé lors de la configuration de la requête
+        console.error("Erreur :", error.message);
+      }
     }
   };
 

@@ -3,12 +3,13 @@ const bcrypt = require("bcrypt");
 const mysql = require("mysql2");
 const jwt = require("jsonwebtoken");
 const { body, validationResult } = require("express-validator");
+const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
-// Configuration de la connexion à la base de données
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -16,27 +17,22 @@ const db = mysql.createConnection({
   database: process.env.DB_DATABASE,
 });
 
-// Route d'inscription
 app.post(
-  "/signup",
-  // Validation des données d'entrée
+  "/api/signup",
   body("username").isLength({ min: 5 }),
   body("password").isLength({ min: 5 }),
-
+  body("email").isEmail(),
   async (req, res) => {
-    // Vérification des erreurs de validation
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
     try {
-      // Hashage du mot de passe
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
-      // Insertion du nouvel utilisateur dans la base de données
       db.query(
-        "INSERT INTO users (username, password) VALUES (?, ?)",
-        [req.body.username, hashedPassword],
+        "INSERT INTO users (username, password, email) VALUES (?, ?, ?)",
+        [req.body.username, hashedPassword, req.body.email],
         (error, results) => {
           if (error) {
             res
@@ -53,9 +49,7 @@ app.post(
   }
 );
 
-// Route de connexion
-app.post("/login", (req, res) => {
-  // Recherche de l'utilisateur dans la base de données
+app.post("/api/login", (req, res) => {
   db.query(
     "SELECT * FROM users WHERE username = ?",
     [req.body.username],
@@ -63,13 +57,11 @@ app.post("/login", (req, res) => {
       if (error) {
         res.status(500).send("Erreur serveur");
       } else if (results.length > 0) {
-        // Vérification du mot de passe
         const comparaison = await bcrypt.compare(
           req.body.password,
           results[0].password
         );
         if (comparaison) {
-          // Création du token JWT
           const token = jwt.sign(
             { username: req.body.username },
             process.env.JWT_SECRET,
@@ -86,29 +78,30 @@ app.post("/login", (req, res) => {
   );
 });
 
-// Middleware pour authentifier le token JWT
 function authenticateToken(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
-  if (token == null) return res.sendStatus(401);
+  if (token == null) {
+    return res.sendStatus(401);
+  }
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403);
+    if (err) {
+      return res.sendStatus(403);
+    }
     req.user = user;
     next();
   });
 }
 
-// Route protégée
 app.get("/protected", authenticateToken, (req, res) => {
   res.send(
     `Bienvenue ${req.user.username}, vous avez accès à la route protégée.`
   );
 });
 
-// Démarrage du serveur
-const PORT = process.env.PORT || 3306;
+const PORT = 3001;
 app.listen(PORT, () => {
   console.log(`Serveur démarré sur le port ${PORT}`);
 });

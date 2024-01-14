@@ -7,14 +7,14 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
-  const login = (token) => {
+  const login = (token, userData) => {
     localStorage.setItem("token", token);
-    // TODO: Définir l'utilisateur connecté ici
+    setUser(userData);
   };
 
   const logout = () => {
     localStorage.removeItem("token");
-    // TODO: Réinitialiser l'état de l'utilisateur ici
+    setUser(null);
   };
 
   return (
