@@ -14,7 +14,7 @@ function SignUpPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      // Remplacez par votre API d'inscription
+      // TODO: Envoyer les données au serveur
       await axios.post("http://localhost:3001/api/signup", {
         username,
         email,
