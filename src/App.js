@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { AuthProvider } from "./AuthContext";
-import ProtectedRoute from "./components/ProtectedRoute";
 import LoginPage from "./components/LoginPage";
 import Dashboard from "./components/Dashboard";
 import SignUpPage from "./components/SignUpPage";

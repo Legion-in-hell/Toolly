@@ -33,6 +33,8 @@ function LoginPage() {
         password,
       });
       login(response.data.token);
+      const token = response.data.token;
+      localStorage.setItem("authToken", token);
       enqueueSnackbar("Connexion réussie!", { variant: "success" });
       navigate("/");
     } catch (error) {
