@@ -7,35 +7,36 @@ import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import { Link as RouterLink } from "react-router-dom";
 import Link from "@mui/material/Link";
+import { useSnackbar } from "notistack";
+import { Link as RouterLink } from "react-router-dom";
 
 function LoginPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, login } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const { login } = useAuth();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
+    if (isAuthenticated) {
       navigate("/");
     }
-  }, [navigate]);
+  }, [isAuthenticated, navigate]);
+
+  const { enqueueSnackbar } = useSnackbar();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      const response = await axios.post("http://localhost:3001/api/login", {
+      const response = await axios.post("http://localhost:3000/api/login", {
         username,
         password,
       });
       login(response.data.token);
-      if (isAuthenticated) {
-        navigate("/");
-      }
+      enqueueSnackbar("Connexion réussie!", { variant: "success" });
+      navigate("/");
     } catch (error) {
+      enqueueSnackbar("Erreur de connexion", { variant: "error" });
       console.error("Erreur de connexion", error);
     }
   };

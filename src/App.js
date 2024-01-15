@@ -7,6 +7,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import LoginPage from "./components/LoginPage";
 import Dashboard from "./components/Dashboard";
 import SignUpPage from "./components/SignUpPage";
+import { SnackbarProvider } from "notistack";
 
 const darkTheme = createTheme({
   palette: {
@@ -17,24 +18,18 @@ const darkTheme = createTheme({
 function App() {
   return (
     <ThemeProvider theme={darkTheme}>
-      <CssBaseline />
-      <AuthProvider>
-        <Router>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignUpPage />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            {/* Ajouter d'autres routes protégées ici */}
-          </Routes>
-        </Router>
-      </AuthProvider>
+      <SnackbarProvider maxSnack={3}>
+        <CssBaseline />
+        <AuthProvider>
+          <Router>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignUpPage />} />
+              <Route path="/" element={<Dashboard />} />
+            </Routes>
+          </Router>
+        </AuthProvider>
+      </SnackbarProvider>
     </ThemeProvider>
   );
 }

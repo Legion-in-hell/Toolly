@@ -1,5 +1,5 @@
 const express = require("express");
-const bcrypt = require("bcrypt");
+const argon2 = require("argon2");
 const mysql = require("mysql2");
 const jwt = require("jsonwebtoken");
 const { body, validationResult } = require("express-validator");
@@ -29,7 +29,9 @@ app.post(
     }
 
     try {
-      const hashedPassword = await bcrypt.hash(req.body.password, 10);
+      const hashedPassword = await argon2.hash(req.body.password, {
+        type: argon2.argon2id,
+      });
       db.query(
         "INSERT INTO users (username, password, email) VALUES (?, ?, ?)",
         [req.body.username, hashedPassword, req.body.email],
@@ -57,11 +59,11 @@ app.post("/api/login", (req, res) => {
       if (error) {
         res.status(500).send("Erreur serveur");
       } else if (results.length > 0) {
-        const comparaison = await bcrypt.compare(
-          req.body.password,
-          results[0].password
+        const validPassword = await argon2.verify(
+          results[0].password,
+          req.body.password
         );
-        if (comparaison) {
+        if (validPassword) {
           const token = jwt.sign(
             { username: req.body.username },
             process.env.JWT_SECRET,
@@ -101,7 +103,7 @@ app.get("/protected", authenticateToken, (req, res) => {
   );
 });
 
-const PORT = 3001;
+const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Serveur démarré sur le port ${PORT}`);
 });
