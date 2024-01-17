@@ -30,6 +30,20 @@ app.post("/api/folders", (req, res) => {
   });
 });
 
+app.get("/api/folders", authenticateToken, (req, res) => {
+  db.query(
+    "SELECT * FROM folders WHERE user_id = ?",
+    [req.user.userId],
+    (err, results) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).send("Error fetching folders");
+      }
+      res.json(results);
+    }
+  );
+});
+
 app.put("/api/folders/:folderId", (req, res) => {
   const folderId = req.params.folderId;
   const { newName } = req.body;

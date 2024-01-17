@@ -10,7 +10,7 @@ import {
   ListItemText,
   Drawer as MuiDrawer,
 } from "@mui/material";
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route, Link, Navigate } from "react-router-dom";
 import axios from "axios";
 import Dialog from "@mui/material/Dialog";
 import FolderIcon from "@mui/icons-material/Folder";
@@ -22,17 +22,23 @@ import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import LightbulbIcon from "@mui/icons-material/Lightbulb";
+import BrushIcon from "@mui/icons-material/Brush";
+import ExitToAppIcon from "@mui/icons-material/ExitToApp";
 import { styled } from "@mui/material/styles";
 import { jwtDecode } from "jwt-decode";
 
 function Dashboard() {
   const [folders, setFolders] = useState([]);
-  const API_BASE_URL = "http://localhost:3001";
+  const API_BASE_URL = "http://localhost:3000";
 
   const getAuthenticatedUserId = () => {
     const token = localStorage.getItem("authToken");
 
-    if (!token) return null;
+    if (!token) {
+      Navigate.push("/login");
+    }
 
     try {
       const decodedToken = jwtDecode(token);
@@ -49,7 +55,12 @@ function Dashboard() {
   const [renamingFolder, setRenamingFolder] = useState(null);
   const fetchFolders = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/folders`);
+      const token = localStorage.getItem("authToken");
+      const response = await axios.get(`${API_BASE_URL}/api/folders`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setFolders(response.data);
     } catch (error) {
       console.error("Error fetching folders", error);
@@ -58,21 +69,30 @@ function Dashboard() {
 
   const handleAddFolder = async () => {
     const userId = getAuthenticatedUserId();
-
-    if (!userId) {
-      console.error("User is not authenticated");
-      return;
-    }
+    const token = localStorage.getItem("authToken");
 
     try {
-      await axios.post(`${API_BASE_URL}/api/folders`, {
-        name: `Dossier ${folders.length + 1}`,
-        userId: userId,
-      });
+      await axios.post(
+        `${API_BASE_URL}/api/folders`,
+        {
+          name: `Dossier ${folders.length + 1}`,
+          userId: userId,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       fetchFolders();
     } catch (error) {
       console.error("Error adding folder", error);
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("authToken");
+    Navigate.push("/login");
   };
 
   const handleDeleteFolder = async (folderId) => {
@@ -128,6 +148,14 @@ function Dashboard() {
 
       <Drawer variant="permanent">
         <List>
+          <ListItem button component={Link} to="/">
+            <ListItemIcon>
+              <DashboardIcon />
+            </ListItemIcon>
+            <ListItemText primary="Dashboard" />
+          </ListItem>
+        </List>
+        <List>
           {folders.map((folder) => (
             <ListItem
               button
@@ -153,6 +181,33 @@ function Dashboard() {
             </ListItemIcon>
             <ListItemText primary="Créer un nouveau dossier" />
           </ListItem>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              height: "400%",
+            }}
+          >
+            <div style={{ flexGrow: 1 }}></div>
+            <ListItem button component={Link} to="/ideabox">
+              <ListItemIcon>
+                <LightbulbIcon />
+              </ListItemIcon>
+              <ListItemText primary="Boîte à idée" />
+            </ListItem>
+            <ListItem button component={Link} to="/drawlly">
+              <ListItemIcon>
+                <BrushIcon />
+              </ListItemIcon>
+              <ListItemText primary="Drawlly" />
+            </ListItem>
+            <ListItem button onClick={handleLogout} sx={{ color: "red" }}>
+              <ListItemIcon sx={{ color: "red" }}>
+                <ExitToAppIcon />
+              </ListItemIcon>
+              <ListItemText primary="Déconnexion" />
+            </ListItem>
+          </div>
         </List>
       </Drawer>
       <Dialog
