@@ -33,13 +33,11 @@ function LoginPage() {
         password,
       });
       login(response.data.token);
-      const token = response.data.token;
-      localStorage.setItem("authToken", token);
       enqueueSnackbar("Connexion réussie!", { variant: "success" });
       navigate("/");
     } catch (error) {
       enqueueSnackbar("Erreur de connexion", { variant: "error" });
-      console.error("Erreur de connexion", error);
+      console.error("Erreur de connexion", error.response?.data || error);
     }
   };
 
