@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   Box,
-  AppBar,
-  Toolbar,
   Typography,
   List,
   ListItem,
@@ -131,21 +129,6 @@ export default function NavigationPanel() {
 
   return (
     <Box sx={{ display: "flex" }}>
-      <AppBar
-        position="fixed"
-        sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          marginLeft: `${drawerWidth}px`,
-          width: `calc(100% - ${drawerWidth}px)`,
-        }}
-      >
-        <Toolbar>
-          <Typography variant="h6" noWrap>
-            Toolly Dashboard
-          </Typography>
-        </Toolbar>
-      </AppBar>
-
       <Drawer variant="permanent">
         <List>
           <ListItem button component={Link} to="/">
@@ -181,34 +164,30 @@ export default function NavigationPanel() {
             </ListItemIcon>
             <ListItemText primary="Créer un nouveau dossier" />
           </ListItem>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              height: "400%",
-            }}
-          >
-            <div style={{ flexGrow: 1 }}></div>
-            <ListItem button component={Link} to="/ideabox">
-              <ListItemIcon>
-                <LightbulbIcon />
-              </ListItemIcon>
-              <ListItemText primary="Boîte à idée" />
-            </ListItem>
-            <ListItem button component={Link} to="/drawlly">
-              <ListItemIcon>
-                <BrushIcon />
-              </ListItemIcon>
-              <ListItemText primary="Drawlly" />
-            </ListItem>
-            <ListItem button onClick={handleLogout} sx={{ color: "red" }}>
-              <ListItemIcon sx={{ color: "red" }}>
-                <ExitToAppIcon />
-              </ListItemIcon>
-              <ListItemText primary="Déconnexion" />
-            </ListItem>
-          </div>
         </List>
+        <div
+          style={{ display: "flex", flexDirection: "column", height: "100%" }}
+        >
+          <div style={{ flexGrow: 1 }}></div>
+          <ListItem button component={Link} to="/ideabox">
+            <ListItemIcon>
+              <LightbulbIcon />
+            </ListItemIcon>
+            <ListItemText primary="Boîte à idée" />
+          </ListItem>
+          <ListItem button component={Link} to="/drawlly">
+            <ListItemIcon>
+              <BrushIcon />
+            </ListItemIcon>
+            <ListItemText primary="Drawlly" />
+          </ListItem>
+          <ListItem button onClick={handleLogout} sx={{ color: "red" }}>
+            <ListItemIcon sx={{ color: "red" }}>
+              <ExitToAppIcon />
+            </ListItemIcon>
+            <ListItemText primary="Déconnexion" />
+          </ListItem>
+        </div>
       </Drawer>
       <Dialog
         open={Boolean(renamingFolder)}
