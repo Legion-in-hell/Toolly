@@ -40,10 +40,6 @@ function App() {
                 path="/ideabox"
                 element={<ProtectedRoute element={<IdeaBox />} />}
               />
-              <Route
-                path="/topbar"
-                element={<ProtectedRoute element={<TopBar />} />}
-              />
             </Routes>
           </Router>
         </AuthProvider>
