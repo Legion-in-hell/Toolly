@@ -9,7 +9,6 @@ import SignUpPage from "./components/SignUpPage";
 import { SnackbarProvider } from "notistack";
 import Drawlly from "./components/Drawlly";
 import IdeaBox from "./components/IdeaBox";
-import TopBar from "./components/TopBar";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const darkTheme = createTheme({
@@ -28,6 +27,7 @@ function App() {
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignUpPage />} />
+
               <Route
                 path="/"
                 element={<ProtectedRoute element={<Dashboard />} />}
