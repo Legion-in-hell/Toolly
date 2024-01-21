@@ -12,6 +12,7 @@ import { Routes, Route, Link, Navigate } from "react-router-dom";
 import axios from "axios";
 import Dialog from "@mui/material/Dialog";
 import FolderIcon from "@mui/icons-material/Folder";
+import { useSnackbar } from "notistack";
 import AddBoxIcon from "@mui/icons-material/AddBox";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -30,9 +31,10 @@ import { jwtDecode } from "jwt-decode";
 export default function NavigationPanel() {
   const [folders, setFolders] = useState([]);
   const API_BASE_URL = "http://localhost:3000";
+  const { enqueueSnackbar } = useSnackbar();
 
   const getAuthenticatedUserId = () => {
-    const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem("token");
 
     if (!token) {
       Navigate.push("/login");
@@ -42,6 +44,7 @@ export default function NavigationPanel() {
       const decodedToken = jwtDecode(token);
       return decodedToken.userId;
     } catch (error) {
+      enqueueSnackbar("Erreur décodage Token", { variant: "error" });
       console.error("Error decoding token:", error);
       return null;
     }
@@ -53,62 +56,80 @@ export default function NavigationPanel() {
   const [renamingFolder, setRenamingFolder] = useState(null);
   const fetchFolders = async () => {
     try {
-      const token = localStorage.getItem("authToken");
       const response = await axios.get(`${API_BASE_URL}/api/folders`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
       setFolders(response.data);
     } catch (error) {
+      enqueueSnackbar("Erreur de récupération des dossiers", {
+        variant: "error",
+      });
       console.error("Error fetching folders", error);
     }
   };
 
   const handleAddFolder = async () => {
     const userId = getAuthenticatedUserId();
-    const token = localStorage.getItem("authToken");
 
     try {
       await axios.post(
-        `${API_BASE_URL}/api/folders`,
+        `${API_BASE_URL}/api/newfolders`,
         {
           name: `Dossier ${folders.length + 1}`,
           userId: userId,
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
         }
       );
       fetchFolders();
     } catch (error) {
+      enqueueSnackbar("Erreur de création d'un dossier", { variant: "error" });
       console.error("Error adding folder", error);
     }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("authToken");
+    localStorage.removeItem("token");
     Navigate.push("/login");
   };
 
   const handleDeleteFolder = async (folderId) => {
     try {
-      await axios.delete(`${API_BASE_URL}/api/folders/${folderId}`);
+      await axios.delete(`${API_BASE_URL}/api/folders/${folderId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
       fetchFolders();
     } catch (error) {
       console.error("Error deleting folder", error);
+      enqueueSnackbar("Erreur de suppresion d'un dossier", {
+        variant: "error",
+      });
     }
   };
 
   const handleRenameFolder = async (folderId, newName) => {
     try {
-      await axios.put(`${API_BASE_URL}/api/folders/${folderId}`, { newName });
+      await axios.put(
+        `${API_BASE_URL}/api/folders/${folderId}`,
+        { newName },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
       fetchFolders();
       setRenamingFolder(null);
     } catch (error) {
       console.error("Error renaming folder", error);
+      enqueueSnackbar("Erreur de renommage d'un dossier", { variant: "error" });
     }
   };
 
@@ -131,7 +152,7 @@ export default function NavigationPanel() {
     <Box sx={{ display: "flex" }}>
       <Drawer variant="permanent">
         <List>
-          <ListItem button component={Link} to="/">
+          <ListItem button component={Link} to="*">
             <ListItemIcon>
               <DashboardIcon />
             </ListItemIcon>
@@ -144,17 +165,28 @@ export default function NavigationPanel() {
               button
               key={folder.id}
               component={Link}
-              to={`/${folder.id}`}
+              to={`/folder/${folder.id}`}
             >
               <ListItemIcon>
                 <FolderIcon />
               </ListItemIcon>
               <ListItemText primary={folder.name} />
-              <ListItemIcon onClick={() => setRenamingFolder(folder)}>
+              <ListItemIcon
+                style={{
+                  justifyContent: "flex-end",
+                  marginRight: "-20px",
+                }}
+                onClick={() => setRenamingFolder(folder)}
+              >
                 <EditIcon />
               </ListItemIcon>
               <ListItemIcon onClick={() => handleDeleteFolder(folder.id)}>
-                <DeleteIcon />
+                <ListItemIcon
+                  style={{ justifyContent: "flex-end", color: "red" }}
+                  onClick={() => handleDeleteFolder(folder.id)}
+                >
+                  <DeleteIcon />
+                </ListItemIcon>
               </ListItemIcon>
             </ListItem>
           ))}

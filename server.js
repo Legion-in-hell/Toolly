@@ -17,62 +17,72 @@ const db = mysql.createConnection({
   database: process.env.DB_DATABASE,
 });
 
-app.post("/api/folders", (req, res) => {
-  const { name, userId } = req.body;
+// Middleware d'authentification
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (token == null) return res.sendStatus(401);
 
-  const query = "INSERT INTO folders (name, user_id) VALUES (?, ?)";
-  db.query(query, [name, userId], (err, result) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).send("Error creating folder");
-    }
-    res.status(201).send({ id: result.insertId, name, userId });
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
   });
+}
+
+// Route de création de dossier
+app.post("/api/newfolders", authenticateToken, (req, res) => {
+  const { name } = req.body;
+  const userId = req.user.userId;
+  const id = Math.floor(Math.random() * 1000000);
+
+  db.query(
+    "INSERT INTO folders (name, user_id, id) VALUES (?, ?, ?)",
+    [name, userId, id],
+    (err, result) => {
+      if (err) return res.status(500).send("Error creating folder");
+      res.status(201).send({ id: result.insertId, name });
+    }
+  );
 });
 
+// Route de récupération des dossiers
 app.get("/api/folders", authenticateToken, (req, res) => {
   db.query(
     "SELECT * FROM folders WHERE user_id = ?",
     [req.user.userId],
     (err, results) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).send("Error fetching folders");
-      }
+      if (err) return res.status(500).send("Error fetching folders");
       res.json(results);
     }
   );
 });
 
-app.put("/api/folders/:folderId", (req, res) => {
-  const folderId = req.params.folderId;
+// Route de mise à jour de dossier
+app.put("/api/folders/:folderId", authenticateToken, (req, res) => {
   const { newName } = req.body;
+  const { folderId } = req.params;
 
-  const query = "UPDATE folders SET name = ? WHERE id = ?";
-  db.query(query, [newName, folderId], (err, result) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).send("Error updating folder");
+  db.query(
+    "UPDATE folders SET name = ? WHERE id = ?",
+    [newName, folderId],
+    (err, result) => {
+      if (err) return res.status(500).send("Error updating folder");
+      if (result.affectedRows === 0)
+        return res.status(404).send("Folder not found");
+      res.send("Folder renamed successfully");
     }
-    if (result.affectedRows === 0) {
-      return res.status(404).send("Folder not found");
-    }
-    res.send("Folder renamed successfully");
-  });
+  );
 });
 
-app.delete("/api/folders/:folderId", (req, res) => {
-  const folderId = req.params.folderId;
+// Route de suppression de dossier
+app.delete("/api/folders/:folderId", authenticateToken, (req, res) => {
+  const { folderId } = req.params;
 
-  const query = "DELETE FROM folders WHERE id = ?";
-  db.query(query, [folderId], (err, result) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).send("Error deleting folder");
-    }
-    if (result.affectedRows === 0) {
+  db.query("DELETE FROM folders WHERE id = ?", [folderId], (err, result) => {
+    if (err) return res.status(500).send("Error deleting folder");
+    if (result.affectedRows === 0)
       return res.status(404).send("Folder not found");
-    }
     res.send("Folder deleted successfully");
   });
 });
