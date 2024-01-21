@@ -33,7 +33,10 @@ function LoginPage() {
         password,
       });
       login(response.data.token);
-      enqueueSnackbar("Connexion réussie!", { variant: "success" });
+      enqueueSnackbar("Connexion réussie!", {
+        variant: "success",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+      });
       navigate("/");
     } catch (error) {
       enqueueSnackbar("Erreur de connexion", { variant: "error" });

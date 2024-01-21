@@ -44,7 +44,10 @@ export default function NavigationPanel() {
       const decodedToken = jwtDecode(token);
       return decodedToken.userId;
     } catch (error) {
-      enqueueSnackbar("Erreur décodage Token", { variant: "error" });
+      enqueueSnackbar("Erreur décodage Token", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+      });
       console.error("Error decoding token:", error);
       return null;
     }
@@ -65,6 +68,7 @@ export default function NavigationPanel() {
     } catch (error) {
       enqueueSnackbar("Erreur de récupération des dossiers", {
         variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
       });
       console.error("Error fetching folders", error);
     }
@@ -88,7 +92,10 @@ export default function NavigationPanel() {
       );
       fetchFolders();
     } catch (error) {
-      enqueueSnackbar("Erreur de création d'un dossier", { variant: "error" });
+      enqueueSnackbar("Erreur de création d'un dossier", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+      });
       console.error("Error adding folder", error);
     }
   };
@@ -106,12 +113,8 @@ export default function NavigationPanel() {
         },
       });
       fetchFolders();
-    } catch (error) {
-      console.error("Error deleting folder", error);
-      enqueueSnackbar("Erreur de suppresion d'un dossier", {
-        variant: "error",
-      });
-    }
+      navigator.push("/");
+    } catch (error) {}
   };
 
   const handleRenameFolder = async (folderId, newName) => {
@@ -129,7 +132,10 @@ export default function NavigationPanel() {
       setRenamingFolder(null);
     } catch (error) {
       console.error("Error renaming folder", error);
-      enqueueSnackbar("Erreur de renommage d'un dossier", { variant: "error" });
+      enqueueSnackbar("Erreur de renommage d'un dossier", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+      });
     }
   };
 
@@ -174,19 +180,16 @@ export default function NavigationPanel() {
               <ListItemIcon
                 style={{
                   justifyContent: "flex-end",
-                  marginRight: "-20px",
                 }}
                 onClick={() => setRenamingFolder(folder)}
               >
                 <EditIcon />
               </ListItemIcon>
-              <ListItemIcon onClick={() => handleDeleteFolder(folder.id)}>
-                <ListItemIcon
-                  style={{ justifyContent: "flex-end", color: "red" }}
-                  onClick={() => handleDeleteFolder(folder.id)}
-                >
-                  <DeleteIcon />
-                </ListItemIcon>
+              <ListItemIcon
+                style={{ justifyContent: "flex-end", color: "red" }}
+                onClick={() => handleDeleteFolder(folder.id)}
+              >
+                <DeleteIcon />
               </ListItemIcon>
             </ListItem>
           ))}

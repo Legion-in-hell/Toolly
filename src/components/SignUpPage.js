@@ -3,16 +3,62 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Link as RouterLink } from "react-router-dom";
 import Box from "@mui/material/Box";
-import { Container, Typography, TextField, Button, Link } from "@mui/material";
+import {
+  Container,
+  Typography,
+  TextField,
+  Button,
+  Link,
+  LinearProgress,
+} from "@mui/material";
 
 function SignUpPage() {
+  const navigate = useNavigate();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
-  const navigate = useNavigate();
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordStrength, setPasswordStrength] = useState(0);
+
+  const isPasswordStrong = (password) => {
+    return password.length >= 8;
+  };
+
+  const handlePasswordChange = (e) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    setPasswordStrength(calculatePasswordStrength(newPassword));
+  };
+
+  const calculatePasswordStrength = (password) => {
+    if (!password) return 0;
+    let strength = 0;
+
+    const lengthCriteria = password.length >= 16;
+    const uppercaseCriteria = /[A-Z]/.test(password);
+    const numbersCriteria = /[0-9]/.test(password);
+    const specialCharCriteria = /[!@#$%^&*]/.test(password);
+
+    if (lengthCriteria) strength += 25;
+    if (uppercaseCriteria) strength += 25;
+    if (numbersCriteria) strength += 25;
+    if (specialCharCriteria) strength += 25;
+
+    return strength;
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (password !== confirmPassword) {
+      setPasswordError("Les mots de passe ne correspondent pas.");
+      return;
+    }
+
+    if (!isPasswordStrong(password)) {
+      setPasswordError("Le mot de passe n'est pas assez fort.");
+      return;
+    }
     try {
       await axios.post("http://localhost:3000/api/signup", {
         username,
@@ -22,14 +68,11 @@ function SignUpPage() {
       navigate("/login");
     } catch (error) {
       if (error.response) {
-        // La requête a été faite et le serveur a répondu avec un statut d'erreur
         console.error("Erreur lors de l'inscription :", error.response.data);
-        alert("Erreur d'inscription: " + error.response.data.message); // Afficher un message d'erreur à l'utilisateur
+        alert("Erreur d'inscription: " + error.response.data.message);
       } else if (error.request) {
-        // La requête a été faite mais aucune réponse n'a été reçue
         console.error("Le serveur ne répond pas :", error.request);
       } else {
-        // Quelque chose s'est mal passé lors de la configuration de la requête
         console.error("Erreur :", error.message);
       }
     }
@@ -76,8 +119,29 @@ function SignUpPage() {
             label="Mot de passe"
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={handlePasswordChange}
           />
+          <TextField
+            variant="outlined"
+            margin="normal"
+            required
+            fullWidth
+            label="Confirmer le mot de passe"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+          {passwordError && (
+            <Typography color="error">{passwordError}</Typography>
+          )}
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="caption">Force du mot de passe :</Typography>
+            <LinearProgress
+              variant="determinate"
+              value={passwordStrength}
+              style={{ backgroundColor: "red" }}
+            />
+          </Box>{" "}
           <Button
             type="submit"
             fullWidth
