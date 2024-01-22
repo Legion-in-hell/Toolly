@@ -20,8 +20,18 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
   };
 
+  const token = localStorage.getItem("token");
+  const notAuthenticated = () => {
+    if (!token) {
+      setUser(null);
+      setIsAuthenticated(false);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, isAuthenticated, login, logout, notAuthenticated }}
+    >
       {children}
     </AuthContext.Provider>
   );

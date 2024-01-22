@@ -12,16 +12,17 @@ import { useSnackbar } from "notistack";
 import { Link as RouterLink } from "react-router-dom";
 
 function LoginPage() {
-  const { isAuthenticated, login } = useAuth();
+  const { login } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (token) {
       navigate("/");
     }
-  }, [isAuthenticated, navigate]);
+  }, [token, navigate]);
 
   const { enqueueSnackbar } = useSnackbar();
 
@@ -37,7 +38,10 @@ function LoginPage() {
         variant: "success",
         anchorOrigin: { vertical: "top", horizontal: "right" },
       });
-      navigate("/");
+      if (response.data.token) {
+        localStorage.setItem("token", response.data.token);
+        navigate("/");
+      }
     } catch (error) {
       enqueueSnackbar("Erreur de connexion", { variant: "error" });
       console.error("Erreur de connexion", error.response?.data || error);

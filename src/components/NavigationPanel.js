@@ -8,7 +8,7 @@ import {
   ListItemText,
   Drawer as MuiDrawer,
 } from "@mui/material";
-import { Routes, Route, Link, Navigate } from "react-router-dom";
+import { Routes, Route, Link, Navigate, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Dialog from "@mui/material/Dialog";
 import FolderIcon from "@mui/icons-material/Folder";
@@ -35,11 +35,6 @@ export default function NavigationPanel() {
 
   const getAuthenticatedUserId = () => {
     const token = localStorage.getItem("token");
-
-    if (!token) {
-      Navigate.push("/login");
-    }
-
     try {
       const decodedToken = jwtDecode(token);
       return decodedToken.userId;
@@ -99,10 +94,10 @@ export default function NavigationPanel() {
       console.error("Error adding folder", error);
     }
   };
-
+  const navigate = useNavigate();
   const handleLogout = () => {
     localStorage.removeItem("token");
-    Navigate.push("/login");
+    navigate("/login");
   };
 
   const handleDeleteFolder = async (folderId) => {
