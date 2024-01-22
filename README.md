@@ -36,14 +36,62 @@ Toolly is an interactive web application designed to simplify your daily task ma
 
 To get Toolly running locally, follow these steps:
 
+Fork or git clone :
+
 ```bash
 git clone https://github.com/Legion-in-hell/Toolly.git
-cd Toolly
+```
+
+Create databse :
+
+```sql
+CREATE TABLE `users` (
+	`id` INT(11) NOT NULL AUTO_INCREMENT,
+	`username` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_general_ci',
+	`password` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_general_ci',
+	`email` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_general_ci',
+	PRIMARY KEY (`id`) USING BTREE
+)
+COLLATE='utf8mb4_general_ci'
+ENGINE=InnoDB
+AUTO_INCREMENT=8
+;
+```
+
+```sql
+CREATE TABLE `folders` (
+	`name` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_general_ci',
+	`user_id` INT(11) NOT NULL DEFAULT '0',
+	`created_at` TIMESTAMP NOT NULL DEFAULT current_timestamp(),
+	`id` INT(11) NOT NULL,
+	INDEX `user_id` (`user_id`) USING BTREE,
+	CONSTRAINT `fk_folders_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE RESTRICT ON DELETE RESTRICT,
+	CONSTRAINT `folders_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE RESTRICT ON DELETE RESTRICT,
+	CONSTRAINT `user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE RESTRICT ON DELETE RESTRICT
+)
+COLLATE='utf8mb4_general_ci'
+ENGINE=InnoDB
+;
+```
+
+Create .env file :
+
+```
+DB_HOST=
+DB_PORT=
+DB_USER=
+DB_PASSWORD=
+DB_DATABASE=
+JWT_SECRET=
+```
+
+```bash
 npm install
+node server.js
 npm start
 ```
 
-Your application should now be running on localhost:3000.
+Your application should now be running on localhost:3001.
 
 ## Technologies Used
 
@@ -84,14 +132,62 @@ Toolly est une application web interactive conçue pour faciliter la gestion de 
 
 Pour lancer Toolly localement, suivez ces étapes :
 
+Fork ou git clone le repo :
+
 ```bash
 git clone https://github.com/Legion-in-hell/Toolly.git
-cd Toolly
+```
+
+Crée la base de données :
+
+```sql
+CREATE TABLE `users` (
+	`id` INT(11) NOT NULL AUTO_INCREMENT,
+	`username` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_general_ci',
+	`password` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_general_ci',
+	`email` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_general_ci',
+	PRIMARY KEY (`id`) USING BTREE
+)
+COLLATE='utf8mb4_general_ci'
+ENGINE=InnoDB
+AUTO_INCREMENT=8
+;
+```
+
+```sql
+CREATE TABLE `folders` (
+	`name` VARCHAR(255) NOT NULL COLLATE 'utf8mb4_general_ci',
+	`user_id` INT(11) NOT NULL DEFAULT '0',
+	`created_at` TIMESTAMP NOT NULL DEFAULT current_timestamp(),
+	`id` INT(11) NOT NULL,
+	INDEX `user_id` (`user_id`) USING BTREE,
+	CONSTRAINT `fk_folders_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE RESTRICT ON DELETE RESTRICT,
+	CONSTRAINT `folders_user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE RESTRICT ON DELETE RESTRICT,
+	CONSTRAINT `user_id` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON UPDATE RESTRICT ON DELETE RESTRICT
+)
+COLLATE='utf8mb4_general_ci'
+ENGINE=InnoDB
+;
+```
+
+Crée le fichier .env :
+
+```
+DB_HOST=
+DB_PORT=
+DB_USER=
+DB_PASSWORD=
+DB_DATABASE=
+JWT_SECRET=
+```
+
+```bash
 npm install
+node server.js
 npm start
 ```
 
-Votre application devrait maintenant être en cours d'exécution sur localhost:3000.
+Votre application devrait maintenant être en cours d'exécution sur localhost:3001.
 
 ## Technologies Utilisées
 
