@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -8,7 +8,7 @@ import {
   ListItemText,
   Drawer as MuiDrawer,
 } from "@mui/material";
-import { Routes, Route, Link, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Dialog from "@mui/material/Dialog";
 import FolderIcon from "@mui/icons-material/Folder";
@@ -30,8 +30,31 @@ import { jwtDecode } from "jwt-decode";
 
 export default function NavigationPanel() {
   const [folders, setFolders] = useState([]);
-  const API_BASE_URL = "http://localhost:3000";
+  const [renamingFolder, setRenamingFolder] = useState(null); // Add this line
+  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
+  const token = localStorage.getItem("token");
+  const API_BASE_URL = "http://localhost:3000";
+
+  const fetchFolders = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/folders`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setFolders(response.data);
+    } catch (error) {
+      enqueueSnackbar("Erreur de récupération des dossiers", {
+        variant: "error",
+      });
+      console.error("Error fetching folders", error);
+    }
+  }, [enqueueSnackbar]);
+
+  useEffect(() => {
+    fetchFolders();
+  }, [fetchFolders, token]);
 
   const getAuthenticatedUserId = () => {
     const token = localStorage.getItem("token");
@@ -45,27 +68,6 @@ export default function NavigationPanel() {
       });
       console.error("Error decoding token:", error);
       return null;
-    }
-  };
-
-  useEffect(() => {
-    fetchFolders();
-  }, []);
-  const [renamingFolder, setRenamingFolder] = useState(null);
-  const fetchFolders = async () => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/api/folders`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
-      setFolders(response.data);
-    } catch (error) {
-      enqueueSnackbar("Erreur de récupération des dossiers", {
-        variant: "error",
-        anchorOrigin: { vertical: "top", horizontal: "right" },
-      });
-      console.error("Error fetching folders", error);
     }
   };
 
@@ -94,7 +96,7 @@ export default function NavigationPanel() {
       console.error("Error adding folder", error);
     }
   };
-  const navigate = useNavigate();
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
@@ -113,6 +115,16 @@ export default function NavigationPanel() {
   };
 
   const handleRenameFolder = async (folderId, newName) => {
+    if (!newName)
+      return enqueueSnackbar("Nom de dossier vide", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+      });
+    if (newName.length > 12)
+      return enqueueSnackbar("Nom de dossier trop long", {
+        variant: "error",
+        anchorOrigin: { vertical: "top", horizontal: "right" },
+      });
     try {
       await axios.put(
         `${API_BASE_URL}/api/folders/${folderId}`,
@@ -175,6 +187,8 @@ export default function NavigationPanel() {
               <ListItemIcon
                 style={{
                   justifyContent: "flex-end",
+                  position: "absolute",
+                  right: "50px",
                 }}
                 onClick={() => setRenamingFolder(folder)}
               >

@@ -11,7 +11,7 @@ function Dashboard() {
     if (!token) {
       navigate("/login");
     }
-  }, [navigate]);
+  }, [navigate, token]);
 
   return (
     <Box sx={{ display: "flex" }}>
