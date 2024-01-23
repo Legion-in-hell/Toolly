@@ -100,16 +100,9 @@ const TopBar = () => {
   const drawerWidth = 277;
 
   return (
-    <Box sx={{ flexGrow: 1, marginBottom: "auto" }}>
-      <AppBar
-        position="fixed"
-        sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          marginLeft: `${drawerWidth}px`,
-          width: `calc(100% - ${drawerWidth}px)`,
-        }}
-      >
-        <Toolbar>
+    <Box sx={{}}>
+      <AppBar position="fixed" sx={{ marginLeft: drawerWidth }}>
+        <Toolbar style={{ marginLeft: drawerWidth }}>
           <Typography variant="h6">Dashboard</Typography>
           <div
             style={{
