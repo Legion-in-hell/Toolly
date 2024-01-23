@@ -30,7 +30,7 @@ import { jwtDecode } from "jwt-decode";
 
 export default function NavigationPanel() {
   const [folders, setFolders] = useState([]);
-  const [renamingFolder, setRenamingFolder] = useState(null); // Add this line
+  const [renamingFolder, setRenamingFolder] = useState(null);
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const token = localStorage.getItem("token");
@@ -162,7 +162,7 @@ export default function NavigationPanel() {
   }));
 
   return (
-    <Box sx={{ display: "flex" }}>
+    <Box sx={{}}>
       <Drawer variant="permanent">
         <List>
           <ListItem button component={Link} to="*">

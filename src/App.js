@@ -10,6 +10,7 @@ import { SnackbarProvider } from "notistack";
 import Drawlly from "./components/Drawlly";
 import IdeaBox from "./components/IdeaBox";
 import ProtectedRoute from "./components/ProtectedRoute";
+import FolderPage from "./components/FolderPage";
 
 const darkTheme = createTheme({
   palette: {
@@ -39,6 +40,10 @@ function App() {
               <Route
                 path="/ideabox"
                 element={<ProtectedRoute element={<IdeaBox />} />}
+              />
+              <Route
+                path="/folder/:folderId"
+                element={<ProtectedRoute element={<FolderPage />} />}
               />
             </Routes>
           </Router>
