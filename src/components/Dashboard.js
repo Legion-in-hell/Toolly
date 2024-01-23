@@ -15,6 +15,9 @@ function Dashboard() {
 
   return (
     <Box sx={{ display: "flex" }}>
+      <div style={{ marginLeft: "300px", marginTop: "80px" }}>
+        <h1>Dashboard</h1>
+      </div>
       <TopBar />
       <NavigationPanel />
     </Box>
