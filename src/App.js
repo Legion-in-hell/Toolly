@@ -11,8 +11,7 @@ import Drawlly from "./components/Drawlly";
 import IdeaBox from "./components/IdeaBox";
 import ProtectedRoute from "./components/ProtectedRoute";
 import FolderPage from "./components/FolderPage";
-import TopBar from "./components/TopBar";
-import NavigationPanel from "./components/NavigationPanel";
+import { PomodoroProvider } from "./components/PomodoroContext";
 
 const darkTheme = createTheme({
   palette: {
@@ -24,33 +23,33 @@ function App() {
   return (
     <ThemeProvider theme={darkTheme}>
       <SnackbarProvider maxSnack={3}>
-        <CssBaseline />
-        <AuthProvider>
-          <Router>
-            <TopBar />
-            <NavigationPanel />
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignUpPage />} />
-              <Route
-                path="*"
-                element={<ProtectedRoute element={<Dashboard />} />}
-              />
-              <Route
-                path="/drawlly"
-                element={<ProtectedRoute element={<Drawlly />} />}
-              />
-              <Route
-                path="/ideabox"
-                element={<ProtectedRoute element={<IdeaBox />} />}
-              />
-              <Route
-                path="/folder/:folderId"
-                element={<ProtectedRoute element={<FolderPage />} />}
-              />
-            </Routes>
-          </Router>
-        </AuthProvider>
+        <PomodoroProvider>
+          <CssBaseline />
+          <AuthProvider>
+            <Router>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignUpPage />} />
+                <Route
+                  path="*"
+                  element={<ProtectedRoute element={<Dashboard />} />}
+                />
+                <Route
+                  path="/drawlly"
+                  element={<ProtectedRoute element={<Drawlly />} />}
+                />
+                <Route
+                  path="/ideabox"
+                  element={<ProtectedRoute element={<IdeaBox />} />}
+                />
+                <Route
+                  path="/folder/:folderId"
+                  element={<ProtectedRoute element={<FolderPage />} />}
+                />
+              </Routes>
+            </Router>
+          </AuthProvider>
+        </PomodoroProvider>
       </SnackbarProvider>
     </ThemeProvider>
   );

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   Box,
   AppBar,
@@ -12,63 +12,40 @@ import {
   DialogTitle,
   TextField,
 } from "@mui/material";
-import SettingsIcon from "@mui/icons-material/Settings";
 import VolumeOffIcon from "@mui/icons-material/VolumeOff";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
-import MP3 from "./assets/alarm.mp3";
+import SettingsIcon from "@mui/icons-material/Settings";
+import { usePomodoro } from "./PomodoroContext"; // Assurez-vous que le chemin est correct
 
 const TopBar = () => {
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [minutes, setMinutes] = useState(25);
-  const [seconds, setSeconds] = useState(0);
-  const [isActive, setIsActive] = useState(false);
-  const [soundOn, setSoundOn] = useState(true);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [workMinutes, setWorkMinutes] = useState(25);
-  const [breakMinutes, setBreakMinutes] = useState(5);
-  const [isBreak, setIsBreakTime] = useState(false);
+  const {
+    minutes,
+    seconds,
+    isActive,
+    soundOn,
+    toggleTimer,
+    toggleSound,
+    workMinutes,
+    breakMinutes,
+    updateWorkMinutes,
+    updateBreakMinutes,
+    setWorkMinutes,
+    setBreakMinutes,
+  } = usePomodoro();
 
-  useEffect(() => {
-    let interval = null;
+  const [date, setDate] = React.useState("");
+  const [time, setTime] = React.useState("");
+  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
 
-    if (isActive) {
-      interval = setInterval(() => {
-        if (seconds === 0) {
-          if (minutes === 0) {
-            clearInterval(interval);
-            if (soundOn) {
-              const audio = new Audio(MP3);
-              audio.play();
-            }
-            if (isBreak) {
-              setIsBreakTime(false);
-              setMinutes(workMinutes);
-            } else {
-              setIsBreakTime(true);
-              setMinutes(breakMinutes);
-            }
-          } else {
-            setMinutes(minutes - 1);
-            setSeconds(59);
-          }
-        } else {
-          setSeconds(seconds - 1);
-        }
-      }, 1000);
-    } else {
-      clearInterval(interval);
-    }
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      setDate(now.toLocaleDateString());
+      setTime(now.toLocaleTimeString());
+    }, 1000);
+
     return () => clearInterval(interval);
-  }, [isActive, seconds, minutes, soundOn, isBreak, workMinutes, breakMinutes]);
-
-  const toggleSound = () => {
-    setSoundOn(!soundOn);
-  };
-
-  const toggleTimer = () => {
-    setIsActive(!isActive);
-  };
+  }, []);
 
   const formatTime = (time) => {
     return String(time).padStart(2, "0");
@@ -83,20 +60,10 @@ const TopBar = () => {
   };
 
   const handleSettingsSave = () => {
-    setMinutes(workMinutes);
-    setSeconds(0);
+    updateWorkMinutes(parseInt(workMinutes, 10));
+    updateBreakMinutes(parseInt(breakMinutes, 10));
     setIsSettingsOpen(false);
   };
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-      setDate(now.toLocaleDateString());
-      setTime(now.toLocaleTimeString());
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   const drawerWidth = 277;
 
@@ -148,8 +115,18 @@ const TopBar = () => {
               width: "100%",
             }}
           >
-            <div>Date: {date}</div>
-            <div>Time: {time}&nbsp;</div>
+            {" "}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                position: "fixed",
+                top: 8,
+              }}
+            >
+              <Typography variant="body1">Time: {time}</Typography>
+              <Typography variant="body1">Date: {date}</Typography>
+            </div>
           </div>
         </Toolbar>
       </AppBar>
