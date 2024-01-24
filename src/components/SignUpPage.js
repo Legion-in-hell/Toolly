@@ -60,7 +60,7 @@ function SignUpPage() {
       return;
     }
     try {
-      await axios.post("http://localhost:3000/api/signup", {
+      await axios.post("https://toolly.fr/api/signup", {
         username,
         email,
         password,

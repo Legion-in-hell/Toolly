@@ -34,7 +34,7 @@ export default function NavigationPanel() {
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const token = localStorage.getItem("token");
-  const API_BASE_URL = "http://localhost:3000";
+  const API_BASE_URL = "https://toolly.fr";
 
   const fetchFolders = useCallback(async () => {
     try {

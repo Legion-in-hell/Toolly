@@ -29,7 +29,7 @@ function LoginPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      const response = await axios.post("http://localhost:3000/api/login", {
+      const response = await axios.post("https://toolly.fr/api/login", {
         username,
         password,
       });
