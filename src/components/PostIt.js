@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import Draggable from "react-draggable";
-import { TextField, IconButton, Paper } from "@mui/material";
+import { TextField, IconButton, Paper, SvgIcon } from "@mui/material";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import CloseIcon from "@mui/icons-material/Close";
+import postItSVG from "./assets/postit.svg";
 
 const PostIt = ({ note, onDrag, onDelete, onEdit }) => {
   return (
@@ -10,7 +11,14 @@ const PostIt = ({ note, onDrag, onDelete, onEdit }) => {
       defaultPosition={{ x: note.x, y: note.y }}
       onStop={(e, data) => onDrag(note.id, data.x, data.y)}
     >
-      <Paper style={{ padding: 10, cursor: "grab", position: "absolute" }}>
+      <Paper
+        style={{
+          padding: 10,
+          cursor: "grab",
+          position: "absolute",
+          backgroundImage: `url(${postItSVG})`,
+        }}
+      >
         <IconButton
           onClick={() => onDelete(note.id)}
           style={{ position: "absolute", top: 0, right: 0 }}
@@ -30,6 +38,18 @@ const PostIt = ({ note, onDrag, onDelete, onEdit }) => {
 };
 
 const PostItBoard = () => {
+  <SvgIcon>
+    <svg
+      width="100"
+      height="100"
+      viewBox="0 0 100 100"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect width="100%" height="100%" fill="#ffeb3b" />
+      <text x="10" y="20" fontFamily="Verdana" fontSize="5"></text>
+    </svg>
+  </SvgIcon>;
+
   const [notes, setNotes] = useState([]);
 
   const addNote = () => {
@@ -62,20 +82,18 @@ const PostItBoard = () => {
 
   return (
     <div>
-      <IconButton onClick={addNote} color="white" aria-label="add">
+      <IconButton onClick={addNote} color="primary" aria-label="add">
         <NoteAddIcon />
       </IconButton>
-      <div>
-        {notes.map((note) => (
-          <PostIt
-            key={note.id}
-            note={note}
-            onDrag={moveNote}
-            onDelete={deleteNote}
-            onEdit={editNote}
-          />
-        ))}
-      </div>
+      {notes.map((note) => (
+        <PostIt
+          key={note.id}
+          note={note}
+          onDrag={moveNote}
+          onDelete={deleteNote}
+          onEdit={editNote}
+        />
+      ))}
     </div>
   );
 };

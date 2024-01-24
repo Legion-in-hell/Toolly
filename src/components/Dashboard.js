@@ -1,7 +1,5 @@
 import React, { useEffect } from "react";
 import { Box } from "@mui/material";
-import NavigationPanel from "./NavigationPanel";
-import TopBar from "./TopBar";
 import { useNavigate } from "react-router-dom";
 
 function Dashboard() {
@@ -15,11 +13,9 @@ function Dashboard() {
 
   return (
     <Box sx={{ display: "flex" }}>
-      <div style={{ marginLeft: "300px", marginTop: "80px" }}>
+      <div style={{ marginLeft: "300px", marginTop: "40px" }}>
         <h1>Dashboard</h1>
       </div>
-      <TopBar />
-      <NavigationPanel />
     </Box>
   );
 }

@@ -11,6 +11,8 @@ import Drawlly from "./components/Drawlly";
 import IdeaBox from "./components/IdeaBox";
 import ProtectedRoute from "./components/ProtectedRoute";
 import FolderPage from "./components/FolderPage";
+import TopBar from "./components/TopBar";
+import NavigationPanel from "./components/NavigationPanel";
 
 const darkTheme = createTheme({
   palette: {
@@ -25,10 +27,11 @@ function App() {
         <CssBaseline />
         <AuthProvider>
           <Router>
+            <TopBar />
+            <NavigationPanel />
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignUpPage />} />
-
               <Route
                 path="*"
                 element={<ProtectedRoute element={<Dashboard />} />}
