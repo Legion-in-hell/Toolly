@@ -15,6 +15,7 @@ import {
 import SettingsIcon from "@mui/icons-material/Settings";
 import VolumeOffIcon from "@mui/icons-material/VolumeOff";
 import VolumeUpIcon from "@mui/icons-material/VolumeUp";
+import MP3 from "./assets/alarm.mp3";
 
 const TopBar = () => {
   const [date, setDate] = useState("");
@@ -37,7 +38,7 @@ const TopBar = () => {
           if (minutes === 0) {
             clearInterval(interval);
             if (soundOn) {
-              const audio = null; //todo new Audio("/sounds/bell.mp3");
+              const audio = new Audio(MP3);
               audio.play();
             }
             if (isBreak) {
