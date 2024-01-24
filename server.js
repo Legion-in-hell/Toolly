@@ -79,11 +79,43 @@ app.put("/api/folders/:folderId", authenticateToken, (req, res) => {
 app.delete("/api/folders/:folderId", authenticateToken, (req, res) => {
   const { folderId } = req.params;
 
-  db.query("DELETE FROM folders WHERE id = ?", [folderId], (err, result) => {
-    if (err) return res.status(500).send("Error deleting folder");
-    if (result.affectedRows === 0)
-      return res.status(404).send("Folder not found");
-    res.send("Folder deleted successfully");
+  db.beginTransaction((err) => {
+    if (err) return res.status(500).send("Error starting transaction");
+
+    // Étape 1: Supprimer tous les post-its associés au dossier
+    db.query(
+      "DELETE FROM postits WHERE folder_id = ?",
+      [folderId],
+      (err, result) => {
+        if (err) {
+          return db.rollback(() => {
+            res.status(500).send("Error deleting post-its");
+          });
+        }
+
+        // Étape 2: Supprimer le dossier lui-même
+        db.query(
+          "DELETE FROM folders WHERE id = ?",
+          [folderId],
+          (err, result) => {
+            if (err) {
+              return db.rollback(() => {
+                res.status(500).send("Error deleting folder");
+              });
+            }
+
+            db.commit((err) => {
+              if (err) {
+                return db.rollback(() => {
+                  res.status(500).send("Error committing transaction");
+                });
+              }
+              res.send("Folder and associated post-its deleted successfully");
+            });
+          }
+        );
+      }
+    );
   });
 });
 
@@ -120,6 +152,64 @@ app.post(
     }
   }
 );
+
+// Créer un post-it
+app.post("/api/postits", authenticateToken, (req, res) => {
+  const { text, x, y, folderId } = req.body;
+  const userId = req.user.userId;
+
+  console.log("Creating post-it with data:", req.body); // Log pour déboguer
+
+  const query =
+    "INSERT INTO postits (text, x, y, folder_id, user_id) VALUES (?, ?, ?, ?, ?)";
+  db.query(query, [text, x, y, folderId, userId], (err, result) => {
+    if (err) {
+      console.error("Error in post-it creation:", err); // Log d'erreur
+      return res.status(500).send("Error creating post-it");
+    }
+    res.status(201).send({ id: result.insertId, text, x, y, folderId, userId });
+  });
+});
+
+// Récupérer les post-its
+app.get("/api/postits/:folderId", authenticateToken, (req, res) => {
+  const { folderId } = req.params;
+  const userId = req.user.userId;
+
+  db.query(
+    "SELECT * FROM postits WHERE folder_id = ? AND user_id = ?",
+    [folderId, userId],
+    (err, results) => {
+      if (err) return res.status(500).send("Error fetching post-its");
+      res.json(results);
+    }
+  );
+});
+
+// Mettre à jour un post-it
+app.put("/api/postits/:id", authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { text, x, y } = req.body;
+
+  db.query(
+    "UPDATE postits SET text = ?, x = ?, y = ? WHERE id = ?",
+    [text, x, y, id],
+    (err, result) => {
+      if (err) return res.status(500).send("Error updating post-it");
+      res.send("Post-it updated successfully");
+    }
+  );
+});
+
+// Supprimer un post-it
+app.delete("/api/postits/:id", authenticateToken, (req, res) => {
+  const { id } = req.params;
+
+  db.query("DELETE FROM postits WHERE id = ?", [id], (err, result) => {
+    if (err) return res.status(500).send("Error deleting post-it");
+    res.send("Post-it deleted successfully");
+  });
+});
 
 app.post("/api/login", (req, res) => {
   db.query(
