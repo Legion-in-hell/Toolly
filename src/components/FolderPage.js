@@ -3,6 +3,7 @@ import { Box } from "@mui/material";
 import PostItBoard from "./PostIt";
 import TopBar from "./TopBar";
 import NavigationPanel from "./NavigationPanel";
+import Todo from "./Todo";
 
 const FolderPage = () => {
   return (
@@ -15,10 +16,10 @@ const FolderPage = () => {
             style={{
               flex: 1,
               paddingRight: "2px",
-              borderRight: "1px solid #ccc",
+              borderRight: "0px solid #ccc",
             }}
           >
-            Todo
+            <Todo />
           </div>
           <div
             style={{
