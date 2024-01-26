@@ -1,0 +1,40 @@
+name: Déployer sur VPS
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Extract code
+        uses: actions/checkout@v3
+
+      - name: Deleting node_modules and package-lock.json
+        run: rm -rf node_modules package-lock.json
+
+      - name: Installing dependencies
+        run: npm install
+
+      - name: Generate build files
+        run: npm run build
+
+      - name: Install sshpass
+        run: sudo apt-get install -y sshpass
+
+      - name: Test connection with VPS
+        run: sshpass -p ${{ secrets.VPS_PASSWORD }} ssh -o StrictHostKeyChecking=no root@89.116.38.109 -p 22 "echo 'Connected to VPS'"
+
+      - name: Execute ls command on VPS
+        run: sshpass -p ${{ secrets.VPS_PASSWORD }} ssh -o StrictHostKeyChecking=no root@89.116.38.109 -p 22 "ls"
+
+      - name: Test if directory exists on VPS
+        run: sshpass -p ${{ secrets.VPS_PASSWORD }} ssh -o StrictHostKeyChecking=no root@89.116.38.109 -p 22 "mkdir -p /var/www/toolly"
+
+      - name: Connect to server
+        run: sshpass -p ${{ secrets.VPS_PASSWORD }} ssh -o StrictHostKeyChecking=no root@89.116.38.109 -p 22 "echo 'Connected'"
+
+      - name: Copy files
+        run: sshpass -p ${{ secrets.VPS_PASSWORD }} scp -r -o StrictHostKeyChecking=no -P 22 ./dist/* root@89.116.38.109:/var/www/toolly/

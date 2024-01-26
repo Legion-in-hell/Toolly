@@ -8,7 +8,13 @@ import {
   ListItemText,
   Drawer as MuiDrawer,
 } from "@mui/material";
-import { Routes, Route, Link, useNavigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Link,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
 import axios from "axios";
 import Dialog from "@mui/material/Dialog";
 import FolderIcon from "@mui/icons-material/Folder";
@@ -29,16 +35,16 @@ import { styled } from "@mui/material/styles";
 import { jwtDecode } from "jwt-decode";
 
 export default function NavigationPanel() {
+  const location = useLocation();
   const [folders, setFolders] = useState([]);
   const [renamingFolder, setRenamingFolder] = useState(null);
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const token = localStorage.getItem("token");
-  const API_BASE_URL = "https://toolly.fr";
 
   const fetchFolders = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/folders`, {
+      const response = await axios.get(`/api/folders`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -76,7 +82,7 @@ export default function NavigationPanel() {
 
     try {
       await axios.post(
-        `${API_BASE_URL}/api/newfolders`,
+        `/api/newfolders`,
         {
           name: `Dossier ${folders.length + 1}`,
           userId: userId,
@@ -104,7 +110,7 @@ export default function NavigationPanel() {
 
   const handleDeleteFolder = async (folderId) => {
     try {
-      await axios.delete(`${API_BASE_URL}/api/folders/${folderId}`, {
+      await axios.delete(`/api/folders/${folderId}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -127,7 +133,7 @@ export default function NavigationPanel() {
       });
     try {
       await axios.put(
-        `${API_BASE_URL}/api/folders/${folderId}`,
+        `/api/folders/${folderId}`,
         { newName },
         {
           headers: {
@@ -165,7 +171,18 @@ export default function NavigationPanel() {
     <Box sx={{}}>
       <Drawer variant="permanent">
         <List>
-          <ListItem button component={Link} to="*">
+          <ListItem
+            button
+            component={Link}
+            to="/"
+            sx={{
+              backgroundColor:
+                location.pathname === "/" ? "action.selected" : "inherit",
+              "&:hover": {
+                backgroundColor: "action.hover",
+              },
+            }}
+          >
             <ListItemIcon>
               <DashboardIcon />
             </ListItemIcon>
@@ -175,10 +192,22 @@ export default function NavigationPanel() {
         <List>
           {folders.map((folder) => (
             <ListItem
-              button
               key={folder.id}
+              button
               component={Link}
               to={`/folder/${folder.id}`}
+              sx={{
+                backgroundColor:
+                  location.pathname === `/folder/${folder.id}`
+                    ? "action.selected"
+                    : "inherit",
+                "&:hover": {
+                  backgroundColor:
+                    location.pathname === `/folder/${folder.id}`
+                      ? "action.hover"
+                      : "inherit",
+                },
+              }}
             >
               <ListItemIcon>
                 <FolderIcon />
@@ -213,13 +242,39 @@ export default function NavigationPanel() {
           style={{ display: "flex", flexDirection: "column", height: "100%" }}
         >
           <div style={{ flexGrow: 1 }}></div>
-          <ListItem button component={Link} to="/ideabox">
+          <ListItem
+            button
+            component={Link}
+            to="/ideabox"
+            sx={{
+              backgroundColor:
+                location.pathname === "/ideabox"
+                  ? "action.selected"
+                  : "inherit",
+              "&:hover": {
+                backgroundColor: "action.hover",
+              },
+            }}
+          >
             <ListItemIcon>
               <LightbulbIcon />
             </ListItemIcon>
             <ListItemText primary="Boîte à idée" />
           </ListItem>
-          <ListItem button component={Link} to="/drawlly">
+          <ListItem
+            button
+            component={Link}
+            to="/drawlly"
+            sx={{
+              backgroundColor:
+                location.pathname === "/drawlly"
+                  ? "action.selected"
+                  : "inherit",
+              "&:hover": {
+                backgroundColor: "action.hover",
+              },
+            }}
+          >
             <ListItemIcon>
               <BrushIcon />
             </ListItemIcon>

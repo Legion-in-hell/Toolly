@@ -26,6 +26,9 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import MuiAlert from "@mui/material/Alert";
+import axios from "axios";
+
+const API_URL = "/api/todos";
 
 function Todo() {
   const [todos, setTodos] = useState([]);
@@ -52,27 +55,48 @@ function Todo() {
     setOpenDialog(true);
   };
 
-  const handleAddOrUpdateTodo = () => {
-    if (newTodo.title.length > 30) {
+  const handleAddOrUpdateTodo = async () => {
+    if (newTodo.title.trim() === "" || newTodo.title.length > 30) {
       setSnackbarOpen(true);
       return;
     }
 
-    const updatedTodo = {
-      ...newTodo,
-      link,
-      file,
-      id: editingTodoId || Date.now(),
-      isCompleted: false,
-    };
-    if (editingTodoId) {
-      setTodos(
-        todos.map((todo) => (todo.id === editingTodoId ? updatedTodo : todo))
-      );
-    } else {
-      setTodos([...todos, updatedTodo]);
+    const formData = new FormData();
+    formData.append("title", newTodo.title);
+    formData.append("description", newTodo.description);
+    formData.append("deadline", newTodo.deadline);
+    formData.append("link", link);
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const blob = new Blob([event.target.result], { type: file.type });
+        formData.append("file", blob, file.name);
+      };
+      reader.readAsArrayBuffer(file);
     }
-    handleCloseDialog();
+
+    // Récupérer le token JWT stocké localement
+    const token = localStorage.getItem("token");
+
+    try {
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          // Add any other headers here if needed
+        },
+      };
+
+      if (editingTodoId) {
+        await axios.put(`${API_URL}/${editingTodoId}`, formData, config);
+      } else {
+        await axios.post(API_URL, formData, config);
+      }
+
+      // Update state logic
+      handleCloseDialog();
+    } catch (error) {
+      console.error("Error adding/updating todo", error);
+    }
   };
 
   const handleCloseDialog = () => {
@@ -99,16 +123,36 @@ function Todo() {
     setOpenDialog(true);
   };
 
-  const handleDeleteTodo = (id) => {
-    setTodos(todos.filter((todo) => todo.id !== id));
+  const handleDeleteTodo = async (id) => {
+    const token = localStorage.getItem("token");
+
+    try {
+      await axios.delete(`${API_URL}/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setTodos(todos.filter((todo) => todo.id !== id));
+    } catch (error) {
+      console.error("Erreur lors de la suppression de la todo", error);
+    }
   };
 
-  const handleCompleteTodo = (id) => {
-    setTodos(
-      todos.map((todo) =>
-        todo.id === id ? { ...todo, isCompleted: !todo.isCompleted } : todo
-      )
-    );
+  const handleCompleteTodo = async (id) => {
+    const token = localStorage.getItem("token");
+    const todo = todos.find((todo) => todo.id === id);
+    const updatedTodo = { ...todo, isCompleted: !todo.isCompleted };
+
+    try {
+      await axios.put(`${API_URL}/${id}`, updatedTodo, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      setTodos(todos.map((todo) => (todo.id === id ? updatedTodo : todo)));
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour de la todo", error);
+    }
   };
 
   const handleFileChange = (e) => {

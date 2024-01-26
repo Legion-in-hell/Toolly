@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../AuthContext";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
@@ -12,7 +11,6 @@ import { useSnackbar } from "notistack";
 import { Link as RouterLink } from "react-router-dom";
 
 function LoginPage() {
-  const { login } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
@@ -29,7 +27,7 @@ function LoginPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      const response = await axios.post("https://toolly.fr/api/login", {
+      const response = await axios.post("/api/login", {
         username,
         password,
       });

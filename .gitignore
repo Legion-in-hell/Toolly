@@ -24,3 +24,6 @@ yarn-error.log*
 
 # Environtment variables
 .env
+
+# memo
+memo.txt

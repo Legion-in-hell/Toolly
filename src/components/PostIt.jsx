@@ -90,14 +90,11 @@ const PostItBoard = () => {
   useEffect(() => {
     const fetchNotes = async () => {
       try {
-        const response = await axios.get(
-          `https://toolly.fr/api/postits/${folderId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
+        const response = await axios.get(`/api/postits/${folderId}`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
         setNotes(response.data);
       } catch (error) {
         console.error("Error fetching notes:", error);
@@ -109,7 +106,7 @@ const PostItBoard = () => {
   const addNote = async () => {
     try {
       const response = await axios.post(
-        "https://toolly.fr/api/postits",
+        "/api/postits",
         {
           text: "Nouveau post-it",
           x: -300,
@@ -131,7 +128,7 @@ const PostItBoard = () => {
   const editNote = async (id, newText) => {
     try {
       await axios.put(
-        `https://toolly.fr/api/postits/${id}`,
+        `/api/postits/${id}`,
         {
           text: newText,
           x: notes.find((note) => note.id === id).x,
@@ -155,7 +152,7 @@ const PostItBoard = () => {
   const moveNote = async (id, x, y) => {
     try {
       await axios.put(
-        `https://toolly.fr/api/postits/${id}`,
+        `/api/postits/${id}`,
         {
           x: x,
           y: y,
@@ -178,7 +175,7 @@ const PostItBoard = () => {
 
   const deleteNote = async (id) => {
     try {
-      await axios.delete(`https://toolly.fr/api/postits/${id}`, {
+      await axios.delete(`/api/postits/${id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
