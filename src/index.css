@@ -85,6 +85,17 @@ code {
   }
 }
 
+.HelpDialog__btn,
+.HelpDialog__btn:hover,
+.HelpDialog__btn:focus,
+.HelpDialog__btn:active,
+.HelpDialog__btn:visited,
+.HelpDialog__header,
+.layer-ui__wrapper__top-right,
+.dropdown-menu-group {
+  display: none !important;
+}
+
 @layer base {
   * {
     @apply border-border;

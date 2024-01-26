@@ -1,4 +1,5 @@
 import React from "react";
+import { Excalidraw } from "@excalidraw/excalidraw";
 import { Box } from "@mui/material";
 import TopBar from "./TopBar";
 import NavigationPanel from "./NavigationPanel";
@@ -8,9 +9,9 @@ function Drawlly() {
     <>
       <TopBar />
       <NavigationPanel />
-      <Box sx={{ display: "flex" }}>
-        <div style={{ marginLeft: "300px", marginTop: "40px" }}>
-          <h1>Drawlly</h1>
+      <Box sx={{ marginLeft: "300px", marginTop: "30px" }}>
+        <div style={{ height: "800px" }}>
+          <Excalidraw />
         </div>
       </Box>
     </>
