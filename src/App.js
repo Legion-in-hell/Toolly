@@ -28,22 +28,22 @@ function App() {
           <AuthProvider>
             <Router>
               <Routes>
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/signup" element={<SignUpPage />} />
+                <Route path="/login/*" element={<LoginPage />} />
+                <Route path="/signup/*" element={<SignUpPage />} />
                 <Route
-                  path="*"
+                  path="/*"
                   element={<ProtectedRoute element={<Dashboard />} />}
                 />
                 <Route
-                  path="/drawlly"
+                  path="/drawlly/*"
                   element={<ProtectedRoute element={<Drawlly />} />}
                 />
                 <Route
-                  path="/ideabox"
+                  path="/ideabox/*"
                   element={<ProtectedRoute element={<IdeaBox />} />}
                 />
                 <Route
-                  path="/folder/:folderId"
+                  path="/folder/:folderId/*"
                   element={<ProtectedRoute element={<FolderPage />} />}
                 />
               </Routes>

@@ -256,7 +256,6 @@ export default function NavigationPanel() {
               },
             }}
           >
-            {" "}
             <ListItemIcon>
               <LightbulbIcon />
             </ListItemIcon>

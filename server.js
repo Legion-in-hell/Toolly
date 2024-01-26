@@ -119,6 +119,88 @@ app.delete("/api/folders/:folderId", authenticateToken, (req, res) => {
   });
 });
 
+app.post("/api/todos", authenticateToken, (req, res) => {
+  const { title, description, deadline, link } = req.body;
+  const userId = req.user.userId;
+
+  const query =
+    "INSERT INTO todos (title, description, deadline, link1, user_id) VALUES (?, ?, ?, ?, ?)";
+  db.query(
+    query,
+    [title, description, deadline, link, userId],
+    (err, result) => {
+      if (err) {
+        console.error("Erreur lors de l'ajout de la todo :", err);
+        return res.status(500).send("Erreur lors de l'ajout de la todo");
+      }
+      res
+        .status(201)
+        .json({ id: result.insertId, title, description, deadline, link });
+    }
+  );
+});
+
+app.get("/api/todos", authenticateToken, (req, res) => {
+  const userId = req.user.userId;
+
+  db.query(
+    "SELECT * FROM todos WHERE user_id = ?",
+    [userId],
+    (err, results) => {
+      if (err) {
+        console.error("Erreur lors de la récupération des todos :", err);
+        return res.status(500).send("Erreur lors de la récupération des todos");
+      }
+      res.json(results);
+    }
+  );
+});
+
+app.put("/api/todos/:todoId", authenticateToken, (req, res) => {
+  const { todoId } = req.params;
+  const { title, description, deadline, link } = req.body;
+
+  const query =
+    "UPDATE todos SET title = ?, description = ?, deadline = ?, link1 = ? WHERE id = ? AND user_id = ?";
+  db.query(
+    query,
+    [title, description, deadline, link, todoId, req.user.userId],
+    (err, result) => {
+      if (err) {
+        console.error("Erreur lors de la mise à jour de la todo :", err);
+        return res.status(500).send("Erreur lors de la mise à jour de la todo");
+      }
+      if (result.affectedRows === 0) {
+        return res
+          .status(404)
+          .send("Todo non trouvée ou vous n'avez pas le droit de la modifier");
+      }
+      res.send("Todo mise à jour avec succès");
+    }
+  );
+});
+
+app.delete("/api/todos/:todoId", authenticateToken, (req, res) => {
+  const { todoId } = req.params;
+
+  db.query(
+    "DELETE FROM todos WHERE id = ? AND user_id = ?",
+    [todoId, req.user.userId],
+    (err, result) => {
+      if (err) {
+        console.error("Erreur lors de la suppression de la todo :", err);
+        return res.status(500).send("Erreur lors de la suppression de la todo");
+      }
+      if (result.affectedRows === 0) {
+        return res
+          .status(404)
+          .send("Todo non trouvée ou vous n'avez pas le droit de la supprimer");
+      }
+      res.send("Todo supprimée avec succès");
+    }
+  );
+});
+
 app.post(
   "/api/signup",
   body("username").isLength({ min: 5 }),
