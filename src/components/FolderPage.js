@@ -10,7 +10,7 @@ const FolderPage = () => {
     <>
       <TopBar />
       <NavigationPanel />
-      <Box sx={{ display: "flex", marginLeft: "300px", marginTop: "50px" }}>
+      <Box sx={{ display: "flex", marginLeft: "300px", marginTop: "30px" }}>
         <div style={{ display: "flex", flex: 1, height: "100vh" }}>
           <div
             style={{
@@ -24,7 +24,7 @@ const FolderPage = () => {
           <div
             style={{
               flex: 1,
-              paddingLeft: "2px",
+              marginRight: "10px",
               justifyContent: "flex-end",
               display: "flex",
             }}

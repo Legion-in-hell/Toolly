@@ -1,27 +1,31 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
+  Box,
+  Button,
+  Collapse,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  IconButton,
-  Collapse,
-  Box,
-  Typography,
   TextField,
-  Button,
-  Card,
+  Typography,
+  Link,
+  Snackbar,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import DeleteIcon from "@mui/icons-material/Delete";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { useSnackbar } from "notistack";
-import { Link } from "react-router-dom";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import MuiAlert from "@mui/material/Alert";
 
 function Todo() {
   const [todos, setTodos] = useState([]);
@@ -29,38 +33,74 @@ function Todo() {
     title: "",
     description: "",
     deadline: "",
-    link: "",
-    file: null,
   });
-  const [editingTodo, setEditingTodo] = useState(null);
+  const [editingTodoId, setEditingTodoId] = useState(null);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [link, setLink] = useState("");
+  const [file, setFile] = useState(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
-  const handleSaveTodo = () => {
-    if (editingTodo) {
-      setTodos(
-        todos.map((todo) =>
-          todo.id === editingTodo ? { ...newTodo, id: editingTodo } : todo
-        )
-      );
-      setEditingTodo(null);
-    } else {
-      setTodos([...todos, { ...newTodo, id: Date.now(), isCompleted: false }]);
-    }
+  const handleOpenDialog = () => {
     setNewTodo({
       title: "",
       description: "",
       deadline: "",
-      link: "",
-      file: null,
     });
+    setLink("");
+    setFile(null);
+    setEditingTodoId(null);
+    setOpenDialog(true);
+  };
+
+  const handleAddOrUpdateTodo = () => {
+    if (newTodo.title.length > 30) {
+      setSnackbarOpen(true);
+      return;
+    }
+
+    const updatedTodo = {
+      ...newTodo,
+      link,
+      file,
+      id: editingTodoId || Date.now(),
+      isCompleted: false,
+    };
+    if (editingTodoId) {
+      setTodos(
+        todos.map((todo) => (todo.id === editingTodoId ? updatedTodo : todo))
+      );
+    } else {
+      setTodos([...todos, updatedTodo]);
+    }
+    handleCloseDialog();
+  };
+
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setNewTodo({
+      title: "",
+      description: "",
+      deadline: "",
+    });
+    setLink("");
+    setFile(null);
+    setEditingTodoId(null);
+  };
+
+  const handleEditTodo = (todo) => {
+    setNewTodo({
+      title: todo.title,
+      description: todo.description,
+      deadline: todo.deadline,
+    });
+    setLink(todo.link);
+    setFile(todo.file);
+    setEditingTodoId(todo.id);
+    setOpenDialog(true);
   };
 
   const handleDeleteTodo = (id) => {
     setTodos(todos.filter((todo) => todo.id !== id));
-  };
-
-  const handleEditTodo = (todo) => {
-    setNewTodo(todo);
-    setEditingTodo(todo.id);
   };
 
   const handleCompleteTodo = (id) => {
@@ -74,45 +114,57 @@ function Todo() {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file && file.size <= 1048576) {
-      // 1 Mo = 1048576 octets
-      setNewTodo({ ...newTodo, file });
+      setFile(file);
     } else {
-      // Gérer l'erreur de taille de fichier
+      alert("File is too large. Max size is 1MB.");
     }
   };
 
-  useEffect(() => {
-    setTodos((todos) => [
-      ...todos.filter((todo) => !todo.isCompleted),
-      ...todos.filter((todo) => todo.isCompleted),
-    ]);
-  }, [todos]);
+  const handleSnackbarClose = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setSnackbarOpen(false);
+  };
 
   return (
-    <Box sx={{ width: "100%", marginBottom: 2 }}>
-      <Card
-        variant="outlined"
-        sx={{ padding: 2, borderRadius: 2, marginBottom: 3 }}
-      >
-        <Box
-          component="form"
-          sx={{ display: "flex", alignItems: "center", gap: 2 }}
-        >
+    <Box sx={{ width: "100%" }}>
+      <Button variant="outlined" onClick={handleOpenDialog}>
+        Add New Todo
+      </Button>
+
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <DialogTitle>
+          {editingTodoId ? "Edit Todo" : "Add New Todo"}
+        </DialogTitle>
+        <DialogContent>
           <TextField
+            margin="dense"
             label="Title"
+            type="text"
+            fullWidth
+            variant="outlined"
             value={newTodo.title}
             onChange={(e) => setNewTodo({ ...newTodo, title: e.target.value })}
           />
           <TextField
+            margin="dense"
             label="Description"
+            type="text"
+            fullWidth
+            multiline
+            rows={4}
+            variant="outlined"
             value={newTodo.description}
             onChange={(e) =>
               setNewTodo({ ...newTodo, description: e.target.value })
             }
           />
           <TextField
+            margin="dense"
             label="Deadline"
             type="date"
+            fullWidth
             InputLabelProps={{ shrink: true }}
             value={newTodo.deadline}
             onChange={(e) =>
@@ -120,21 +172,37 @@ function Todo() {
             }
           />
           <TextField
+            margin="dense"
             label="Link"
-            value={newTodo.link}
-            onChange={(e) => setNewTodo({ ...newTodo, link: e.target.value })}
+            type="text"
+            fullWidth
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
           />
-          <input type="file" onChange={handleFileChange} />
-          <Button variant="contained" onClick={handleSaveTodo}>
-            {editingTodo ? "Update" : "Add"} Todo
+          <Button variant="contained" component="label">
+            Upload File
+            <input type="file" hidden onChange={handleFileChange} />
           </Button>
-        </Box>
-      </Card>
-      <TableContainer
-        component={Paper}
-        sx={{ maxHeight: 400, borderRadius: 2, overflow: "auto" }}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
+          <Button onClick={handleAddOrUpdateTodo}>
+            {editingTodoId ? "Update" : "Add"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={handleSnackbarClose}
       >
-        <Table stickyHeader aria-label="collapsible table">
+        <MuiAlert severity="error" onClose={handleSnackbarClose}>
+          Title should not exceed 30 characters.
+        </MuiAlert>
+      </Snackbar>
+
+      <TableContainer component={Paper} sx={{ maxHeight: "800" }}>
+        <Table stickyHeader aria-label="todo table">
           <TableHead>
             <TableRow>
               <TableCell />
@@ -148,9 +216,9 @@ function Todo() {
               <TodoRow
                 key={todo.id}
                 todo={todo}
-                onComplete={handleCompleteTodo}
-                onDelete={handleDeleteTodo}
                 onEdit={handleEditTodo}
+                onDelete={handleDeleteTodo}
+                onComplete={handleCompleteTodo}
               />
             ))}
           </TableBody>
@@ -160,15 +228,15 @@ function Todo() {
   );
 }
 
-function TodoRow({ todo, onComplete, onDelete, onEdit }) {
+function TodoRow({ todo, onEdit, onDelete, onComplete }) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
       <TableRow
         sx={{
-          "& > *": { borderBottom: "unset", borderRadius: "4px" },
-          marginBottom: 1,
+          "& > *": { borderBottom: "unset" },
+          id: "todo-row",
         }}
       >
         <TableCell>
@@ -208,14 +276,16 @@ function TodoRow({ todo, onComplete, onDelete, onEdit }) {
               <Typography>{todo.description}</Typography>
               {todo.link && (
                 <Typography>
-                  <Link href={todo.link} target="_blank" rel="noopener">
+                  <Link
+                    href={todo.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     {todo.link}
                   </Link>
                 </Typography>
               )}
-              {todo.file && (
-                <Typography>Attached File: {todo.file.name}</Typography>
-              )}
+              {todo.file && <Typography>File: {todo.file.name}</Typography>}
             </Box>
           </Collapse>
         </TableCell>
