@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { Link as RouterLink } from "react-router-dom";
+import { api } from "../axios";
 import Box from "@mui/material/Box";
 import {
   Container,
@@ -21,7 +21,11 @@ function SignUpPage() {
   const [passwordError, setPasswordError] = useState("");
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [googleAuthSecret, setGoogleAuthSecret] = useState("");
-  const [googleAuthQrCode, setGoogleAuthQrCode] = useState("");
+  const [googleAuthQrCode, setGoogleAuthQrCode] = useState(null);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [is2FAEnabled, setIs2FAEnabled] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [usernameError, setUsernameError] = useState(null);
 
   useEffect(() => {
     checkUsernameAndDisplayError(username);
@@ -31,17 +35,6 @@ function SignUpPage() {
     return password.length >= 8;
   };
 
-  const handleGenerateGoogleAuthSecret = async () => {
-    try {
-      const response = await axios.get("/api/signup/google-authenticator");
-      setGoogleAuthSecret(response.data.secret);
-      const qrCode = `https://chart.googleapis.com/chart?chs=200x200&chld=M|0&cht=qr&chl=otpauth://totp/Toolly:${username}?secret=${response.data.secret}&issuer=Toolly`;
-      setGoogleAuthQrCode(DOMPurify.sanitize(qrCode));
-    } catch (error) {
-      console.error("Error generating Google Authenticator secret:", error);
-    }
-  };
-
   const handlePasswordChange = (e) => {
     const newPassword = e.target.value;
     setPassword(newPassword);
@@ -49,28 +42,41 @@ function SignUpPage() {
     updatePasswordStrengthColors(newPassword);
   };
 
+  const handleGoogleAuthSecret = async () => {
+    try {
+      const response = await api.get("/api/signup/google-authenticator");
+      setGoogleAuthSecret(response.data.secret);
+      setGoogleAuthQrCode(response.data.qrCodeUrl);
+    } catch (error) {
+      console.error(
+        "Erreur lors de la génération du secret Google Authenticator:",
+        error
+      );
+    }
+  };
+
+  const handleTwoFactorCodeChange = (event) => {
+    setTwoFactorCode(event.target.value);
+  };
+
   const checkUsername = async (username) => {
     try {
-      const response = await axios.get(`/api/user/exists?username=${username}`);
+      const response = await api.get(`/api/user/exists?username=${username}`);
       return response.data.exists;
     } catch (error) {
       console.error("Error checking username:", error);
     }
   };
 
-  axios.get("/api/signup/google-authenticator", (req, res) => {
-    const secret = speakeasy.generateSecret();
-    res.json({ secret: secret.base32 });
-  });
-
   const checkUsernameAndDisplayError = async (username) => {
     try {
       const userExists = await checkUsername(username);
-      const userAlreadyExistElement =
-        document.querySelector(".userAlreadyExist");
-      userAlreadyExistElement.style.display = userExists ? "block" : "none";
+      setUsernameError(userExists ? "Ce nom d'utilisateur existe déjà" : null);
     } catch (error) {
-      console.error("Error checking username:", error);
+      console.error(
+        "Erreur lors de la vérification du nom d'utilisateur :",
+        error
+      );
     }
   };
 
@@ -113,35 +119,45 @@ function SignUpPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setIsLoading(true);
+
     if (password !== confirmPassword) {
       setPasswordError("Les mots de passe ne correspondent pas.");
-      return;
-    }
-    if (!googleAuthSecret) {
-      alert("Veuillez configurer Google Authenticator avant de vous inscrire");
+      setIsLoading(false);
       return;
     }
 
     if (!isPasswordStrong(password)) {
       setPasswordError("Le mot de passe n'est pas assez fort.");
+      setIsLoading(false);
       return;
     }
+
+    if (!isPasswordStrong(password)) {
+      setPasswordError("Le mot de passe n'est pas assez fort.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      await axios.post("/api/signup", {
+      const response = await api.post("/api/signup", {
         username,
         password,
-        googleAuthSecret,
+        email: "",
+        googleAuthSecret: is2FAEnabled ? googleAuthSecret : null,
       });
+      console.log("Inscription réussie :", response.data);
       navigate("/login");
     } catch (error) {
       if (error.response) {
-        console.error("Error signing up:", error.response.data);
-        alert("Erreur d'inscription: " + error.response.data.message);
-      } else if (error.request) {
-        console.error("Server not responding:", error.request);
+        // Gestion des erreurs plus précise ici
+        const errorMessage = error.response.data.error || "Erreur inconnue";
+        alert(`Erreur d'inscription : ${errorMessage}`);
       } else {
-        console.error("Error:", error.message);
+        console.error("Erreur lors de l'inscription : ", error);
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -155,7 +171,7 @@ function SignUpPage() {
           alignItems: "center",
         }}
       >
-        <Typography component="h1" variant="h5">
+        <Typography component="h1" variant="h5" style={{ textAlign: "center" }}>
           Inscription
         </Typography>
         <form onSubmit={handleSubmit} style={{ width: "100%", marginTop: 1 }}>
@@ -199,7 +215,7 @@ function SignUpPage() {
           {passwordError && (
             <Typography color="error">{passwordError}</Typography>
           )}
-          <Box sx={{ mt: 2 }}>
+          <Box sx={{ mt: 2 }} mb={3}>
             <Box mb={1}>
               <Typography variant="caption">Force du mot de passe :</Typography>
             </Box>
@@ -246,15 +262,30 @@ function SignUpPage() {
               value={passwordStrength}
               style={{ backgroundColor: "red" }}
             />
-          </Box>{" "}
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleGenerateGoogleAuthSecret}
-            style={{ margin: "24px 0px 16px" }}
-          >
-            Configurer Google Authenticator
-          </Button>
+          </Box>
+          <div style={{ textAlign: "center" }}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => setIs2FAEnabled(!is2FAEnabled)}
+            >
+              {is2FAEnabled ? "Désactiver 2FA" : "Activer 2FA"}
+            </Button>
+            {is2FAEnabled && googleAuthQrCode && (
+              <Box mb={1} mt={1} alignContent={"center"}>
+                <img
+                  src={DOMPurify.sanitize(googleAuthQrCode)}
+                  alt="QR code pour Google Authenticator"
+                />
+                <TextField
+                  label="Code Google Authenticator"
+                  variant="outlined"
+                  value={twoFactorCode}
+                  onChange={handleTwoFactorCodeChange}
+                />
+              </Box>
+            )}
+          </div>
           <Button
             type="submit"
             fullWidth
@@ -262,6 +293,7 @@ function SignUpPage() {
             color="primary"
             style={{ margin: "24px 0px 16px" }}
           >
+            {" "}
             S'inscrire
           </Button>
           <Typography variant="body2" style={{ textAlign: "center" }}>

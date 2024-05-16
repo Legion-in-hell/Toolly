@@ -5,7 +5,7 @@ import { useParams } from "react-router-dom";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import CloseIcon from "@mui/icons-material/Close";
 import postItSVG from "./assets/postit.svg";
-import axios from "axios";
+import { api } from "../axios";
 
 const PostIt = ({ note, onDrag, onDelete, onEdit }) => {
   const [noteText, setNoteText] = useState(note.text);
@@ -20,12 +20,16 @@ const PostIt = ({ note, onDrag, onDelete, onEdit }) => {
     }
   };
 
+  const nodeRef = React.useRef(null);
+
   return (
     <Draggable
+      nodeRef={nodeRef}
       defaultPosition={{ x: note.x, y: note.y }}
       onStop={(e, data) => onDrag(note.id, data.x, data.y)}
     >
       <Paper
+        ref={nodeRef}
         style={{
           padding: 10,
           cursor: "grab",
@@ -90,7 +94,7 @@ const PostItBoard = () => {
   useEffect(() => {
     const fetchNotes = async () => {
       try {
-        const response = await axios.get(`/api/postits/${folderId}`, {
+        const response = await api.get(`/api/postits/${folderId}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
@@ -105,7 +109,7 @@ const PostItBoard = () => {
 
   const addNote = async () => {
     try {
-      const response = await axios.post(
+      const response = await api.post(
         "/api/postits",
         {
           text: "Nouveau post-it",
@@ -127,7 +131,7 @@ const PostItBoard = () => {
 
   const editNote = async (id, newText) => {
     try {
-      await axios.put(
+      await api.put(
         `/api/postits/${id}`,
         {
           text: newText,
@@ -151,7 +155,7 @@ const PostItBoard = () => {
 
   const moveNote = async (id, x, y) => {
     try {
-      await axios.put(
+      await api.put(
         `/api/postits/${id}`,
         {
           x: x,
@@ -175,7 +179,7 @@ const PostItBoard = () => {
 
   const deleteNote = async (id) => {
     try {
-      await axios.delete(`/api/postits/${id}`, {
+      await api.delete(`/api/postits/${id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },

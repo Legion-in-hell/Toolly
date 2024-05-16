@@ -15,7 +15,7 @@ import {
   useNavigate,
   useLocation,
 } from "react-router-dom";
-import axios from "axios";
+import { api } from "../axios";
 import Dialog from "@mui/material/Dialog";
 import FolderIcon from "@mui/icons-material/Folder";
 import { useSnackbar } from "notistack";
@@ -44,7 +44,7 @@ export default function NavigationPanel() {
 
   const fetchFolders = useCallback(async () => {
     try {
-      const response = await axios.get(`/api/folders`, {
+      const response = await api.get(`/api/folders`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -81,7 +81,7 @@ export default function NavigationPanel() {
     const userId = getAuthenticatedUserId();
 
     try {
-      await axios.post(
+      await api.post(
         `/api/newfolders`,
         {
           name: `Dossier ${folders.length + 1}`,
@@ -110,7 +110,7 @@ export default function NavigationPanel() {
 
   const handleDeleteFolder = async (folderId) => {
     try {
-      await axios.delete(`/api/folders/${folderId}`, {
+      await api.delete(`/api/folders/${folderId}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -132,7 +132,7 @@ export default function NavigationPanel() {
         anchorOrigin: { vertical: "top", horizontal: "right" },
       });
     try {
-      await axios.put(
+      await api.put(
         `/api/folders/${folderId}`,
         { newName },
         {

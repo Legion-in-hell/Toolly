@@ -4,10 +4,10 @@ const mysql = require("mysql2");
 const jwt = require("jsonwebtoken");
 const { body, validationResult } = require("express-validator");
 const cors = require("cors");
-const fetch = require("node-fetch");
-const authenticator = require("js-google-authenticator");
-const csurf = require("csurf");
 const helmet = require("helmet");
+const passport = require("passport");
+const session = require("express-session");
+const multer = require("multer");
 
 require("dotenv").config();
 
@@ -15,15 +15,23 @@ const app = express();
 app.use(express.json());
 app.use(
   cors({
-    origin: [
-      "http://localhost:3001",
-      "https://toolly.fr",
-      "http://localhost:3000",
-      "https://localhost:5173",
-    ],
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-app.use(csurf());
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false },
+  })
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
 app.use(helmet.hidePoweredBy());
 
 const db = mysql.createConnection({
@@ -33,65 +41,113 @@ const db = mysql.createConnection({
   database: process.env.DB_DATABASE,
 });
 
-const getGoogleAuthenticatorSecret = (username) => {
-  const secret_key = authenticator.createSecret();
-  const code = authenticator.getCode(secret_key);
+app.use(passport.initialize());
+app.use(passport.session());
 
-  db.query(
-    "UPDATE users SET google_authenticator_secret = ? WHERE username = ?",
-    [secret_key, username],
-    (err) => {
-      if (err) {
-        console.error("Error updating Google Authenticator secret:", err);
-        return null;
-      }
-    }
-  );
-  return secret_key;
-};
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
 
-const validateGoogleAuthenticatorCode = (username, code) => {
-  const secret = getGoogleAuthenticatorSecret(username);
-  return authenticator.checkCode(secret, code);
-};
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
+passport.deserializeUser((id, done) => {
+  db.query("SELECT * FROM users WHERE id = ?", [id], (err, results) => {
+    done(err, results[0]);
+  });
+});
+
+app.get("/api/csrf-token", (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
+
+// Route de connexion (login)
 app.post(
-  "/api/signup/google-authenticator",
-  body("username").isLength({ min: 5 }),
-  body("password").isLength({ min: 5 }),
-  body("email").isEmail(),
+  "/api/login",
+  body("username")
+    .isLength({ min: 5 })
+    .withMessage("Le nom d'utilisateur doit contenir au moins 5 caractères"),
+  body("password")
+    .isLength({ min: 8 })
+    .withMessage("Le mot de passe doit contenir au moins 8 caractères"),
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    try {
-      const hashedPassword = await argon2.hash(req.body.password, {
-        type: argon2.argon2id,
-      });
-      db.query(
-        "INSERT INTO users (username, password, email) VALUES (?, ?, ?)",
-        [req.body.username, hashedPassword, req.body.email],
-        (error, results) => {
-          if (error) {
-            return res.status(500).send("Erreur serveur");
-          }
-          const secretKey = getGoogleAuthenticatorSecret(req.body.username);
-          const qrCodeUrl = authenticator.getQRCode(
-            secretKey,
-            req.body.username
-          );
-          const registerGoogleSignUp = authenticator.forApp(
-            qrCodeUrl,
-            secretKey
-          );
-          res.status(201).json({ message: "User registered successfully" });
+    const { username, password } = req.body;
+
+    db.query(
+      "SELECT * FROM users WHERE username = ?",
+      [username],
+      async (error, results) => {
+        if (error) return res.status(500).json({ error: "Erreur serveur" });
+        if (results.length === 0)
+          return res
+            .status(401)
+            .json({ error: "Nom d'utilisateur ou mot de passe incorrect" });
+
+        const user = results[0];
+        const isPasswordValid = await argon2.verify(user.password, password);
+        if (!isPasswordValid)
+          return res
+            .status(401)
+            .json({ error: "Nom d'utilisateur ou mot de passe incorrect" });
+
+        if (user.secret_2fa) {
+          return res.json({ requires2FA: true });
         }
-      );
-    } catch {
-      res.status(500).send("Erreur serveur");
+
+        const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
+          expiresIn: "1h",
+        });
+        res.json({ token });
+      }
+    );
+  }
+);
+
+app.post(
+  "/api/login/validate-2fa",
+  body("code").notEmpty().withMessage("Le code 2FA est requis"),
+  (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
+
+    const { username, code } = req.body;
+
+    db.query(
+      "SELECT secret_2fa FROM users WHERE username = ?",
+      [username],
+      (err, results) => {
+        if (err) return res.status(500).json({ error: "Erreur serveur" });
+        if (results.length === 0)
+          return res.status(404).json({ error: "Utilisateur non trouvé" });
+
+        const userSecret = results[0].secret_2fa;
+
+        const isValid = speakeasy.totp.verify({
+          secret: userSecret,
+          encoding: "base32",
+          token: code,
+          window: 1,
+        });
+
+        if (isValid) {
+          const token = jwt.sign(
+            { userId: results[0].id },
+            process.env.JWT_SECRET,
+            { expiresIn: "1h" }
+          );
+          res.json({ token });
+        } else {
+          res.status(401).json({ error: "Code 2FA invalide" });
+        }
+      }
+    );
   }
 );
 
@@ -101,53 +157,6 @@ db.connect((err) => {
     return;
   }
   console.log("Connecté à la base de données MySQL");
-});
-
-app.post("/api/password-reset-request", (req, res) => {
-  const { pseudo } = req.body;
-
-  db.query(
-    "SELECT * FROM users WHERE username = ?",
-    [pseudo],
-    (err, results) => {
-      if (err) {
-        return res.status(500).send("Error checking username");
-      }
-
-      if (results.length === 0) {
-        return res.status(404).send("Utilisateur non trouvé");
-      }
-
-      app.post("/api/password-reset", async (req, res) => {
-        const { pseudo, googleAuthCode, newPassword } = req.body;
-
-        const validGoogleAuthCode = validateGoogleAuthenticatorCode(
-          pseudo,
-          googleAuthCode
-        );
-
-        if (!validGoogleAuthCode) {
-          return res.status(400).send("Code Google Authenticator invalide");
-        }
-
-        const hashedPassword = await argon2.hash(newPassword, {
-          type: argon2.argon2id,
-        });
-
-        db.query(
-          "UPDATE users SET password = ? WHERE username = ?",
-          [hashedPassword, pseudo],
-          (err) => {
-            if (err) {
-              return res.status(500).send("Error updating password");
-            }
-
-            res.status(200).send("Mot de passe réinitialisé avec succès");
-          }
-        );
-      });
-    }
-  );
 });
 
 const authenticateToken = (req, res, next) => {
@@ -204,44 +213,6 @@ app.put("/api/folders/:folderId", authenticateToken, (req, res) => {
   );
 });
 
-app.get("/api/user/exists", (req, res) => {
-  const { username } = req.query;
-
-  db.query(
-    "SELECT * FROM users WHERE username = ?",
-    [username],
-    (err, results) => {
-      if (err) return res.status(500).send("Error checking username");
-      res.json({ exists: results.length > 0 });
-    }
-  );
-});
-
-app.get("/api/user/exists", (req, res) => {
-  const { username } = req.query;
-
-  const apiUrl = `/api/user/exists?username=${username}`;
-
-  fetch(apiUrl)
-    .then((response) => response.json())
-    .then((data) => {
-      res.json(data);
-    })
-    .catch((error) => {
-      console.error("Error checking username:", error);
-      res.status(500).send("Error checking username");
-    });
-});
-
-app.use("/api/user/exists", (req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept"
-  );
-  next();
-});
-
 app.delete("/api/folders/:folderId", authenticateToken, (req, res) => {
   const { folderId } = req.params;
 
@@ -283,77 +254,135 @@ app.delete("/api/folders/:folderId", authenticateToken, (req, res) => {
   });
 });
 
-app.post("/api/todos", authenticateToken, (req, res) => {
-  const { title, description, deadline, link } = req.body;
-  const userId = req.user.userId;
-
-  const query =
-    "INSERT INTO todos (title, description, deadline, link1, user_id) VALUES (?, ?, ?, ?, ?)";
-  db.query(
-    query,
-    [title, description, deadline, link, userId],
-    (err, result) => {
-      if (err) {
-        console.error("Erreur lors de l'ajout de la tâche :", err);
-        return res.status(500).send("Erreur lors de l'ajout de la tâche");
-      }
-      res
-        .status(201)
-        .json({ id: result.insertId, title, description, deadline, link });
+app.post(
+  "/api/todos",
+  authenticateToken,
+  upload.single("file"),
+  body("Title")
+    .notEmpty()
+    .withMessage("Le titre est requis")
+    .isLength({ max: 255 })
+    .withMessage("Le titre ne doit pas dépasser 255 caractères"),
+  (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
-  );
-});
+
+    const { Title, Description, Deadline, Link1, folderId } = req.body;
+    const userId = req.user.userId;
+    const file = req.file;
+    let fileName = null;
+    let fileData = null;
+    if (file) {
+      fileName = file.originalname;
+      fileData = file.buffer;
+    }
+
+    const query =
+      "INSERT INTO Todos (Title, Description, Deadline, Link1, UserID, file_name, file_data, folderId) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    db.query(
+      query,
+      [
+        Title,
+        Description,
+        Deadline,
+        Link1,
+        userId,
+        fileName,
+        fileData,
+        folderId,
+      ],
+      (err, result) => {
+        if (err) {
+          console.error("Erreur lors de l'ajout de la tâche :", err);
+          return res
+            .status(500)
+            .json({ error: "Erreur lors de l'ajout de la tâche" });
+        }
+        res.status(201).json({
+          id: result.insertId,
+          Title,
+          Description,
+          Deadline,
+          Link1,
+          fileName: fileName,
+        });
+      }
+    );
+  }
+);
 
 app.get("/api/todos", authenticateToken, (req, res) => {
   const userId = req.user.userId;
 
-  db.query(
-    "SELECT * FROM todos WHERE user_id = ?",
-    [userId],
-    (err, results) => {
-      if (err) {
-        console.error("Erreur lors de la récupération des tâches :", err);
-        return res
-          .status(500)
-          .send("Erreur lors de la récupération des tâches");
-      }
-      res.json(results);
+  db.query("SELECT * FROM Todos WHERE UserID = ?", [userId], (err, results) => {
+    if (err) {
+      console.error("Erreur lors de la récupération des tâches :", err);
+      return res.status(500).send("Erreur lors de la récupération des tâches");
     }
-  );
+    res.json(results);
+  });
 });
 
-app.put("/api/todos/:todoId", authenticateToken, (req, res) => {
-  const { todoId } = req.params;
-  const { title, description, deadline, link } = req.body;
-
-  const query =
-    "UPDATE todos SET title = ?, description = ?, deadline = ?, link1 = ? WHERE id = ? AND user_id = ?";
-  db.query(
-    query,
-    [title, description, deadline, link, todoId, req.user.userId],
-    (err, result) => {
-      if (err) {
-        console.error("Erreur lors de la mise à jour de la tâche :", err);
-        return res
-          .status(500)
-          .send("Erreur lors de la mise à jour de la tâche");
-      }
-      if (result.affectedRows === 0) {
-        return res
-          .status(404)
-          .send("Tâche non trouvée ou vous n'avez pas le droit de la modifier");
-      }
-      res.send("Tâche mise à jour avec succès");
+app.put(
+  "/api/todos/:todoId",
+  authenticateToken,
+  upload.single("file"),
+  body("Title")
+    .notEmpty()
+    .withMessage("Le titre est requis")
+    .isLength({ max: 255 })
+    .withMessage("Le titre ne doit pas dépasser 255 caractères"),
+  (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
-  );
-});
+
+    const { todoId } = req.params;
+    const { Title, Description, Deadline, Link1 } = req.body;
+    const userId = req.user.userId;
+    const file = req.file;
+    let fileName = null;
+    let fileData = null;
+    if (file) {
+      fileName = file.originalname;
+      fileData = file.buffer;
+    }
+
+    const query =
+      "UPDATE Todos SET Title = ?, Description = ?, Deadline = ?, Link1 = ?, file_name = ?, file_data = ? WHERE TodoID = ? AND UserID = ?";
+    db.query(
+      query,
+      [Title, Description, Deadline, Link1, fileName, fileData, todoId, userId],
+      (err, result) => {
+        if (err) {
+          console.error("Erreur lors de la mise à jour de la tâche :", err);
+          return res
+            .status(500)
+            .send("Erreur lors de la mise à jour de la tâche");
+        }
+        if (result.affectedRows === 0) {
+          return res
+            .status(404)
+            .send(
+              "Tâche non trouvée ou vous n'avez pas le droit de la modifier"
+            );
+        }
+        res.send("Tâche mise à jour avec succès");
+      }
+    );
+  }
+);
 
 app.delete("/api/todos/:todoId", authenticateToken, (req, res) => {
   const { todoId } = req.params;
+  const userId = req.user.userId;
 
   db.query(
-    "DELETE FROM todos WHERE id = ? AND user_id = ?",
-    [todoId, req.user.userId],
+    "DELETE FROM Todos WHERE TodoID = ? AND UserID = ?",
+    [todoId, userId],
     (err, result) => {
       if (err) {
         console.error("Erreur lors de la suppression de la tâche :", err);
@@ -375,9 +404,33 @@ app.delete("/api/todos/:todoId", authenticateToken, (req, res) => {
 
 app.post(
   "/api/signup",
-  body("username").isLength({ min: 5 }),
-  body("password").isLength({ min: 5 }),
-  body("email").isEmail(),
+  // Validation des champs avec express-validator
+  body("username")
+    .isLength({ min: 5 })
+    .withMessage("Le nom d'utilisateur doit contenir au moins 5 caractères")
+    .custom(async (value) => {
+      try {
+        const userExists = await checkUsernameExists(value);
+        if (userExists) {
+          return Promise.reject("Ce nom d'utilisateur existe déjà");
+        }
+      } catch (error) {
+        return Promise.reject(
+          "Erreur lors de la vérification du nom d'utilisateur"
+        );
+      }
+    }),
+
+  body("password")
+    .isLength({ min: 8 })
+    .withMessage("Le mot de passe doit contenir au moins 8 caractères")
+    .matches(/[A-Z]/)
+    .withMessage("Le mot de passe doit contenir au moins une lettre majuscule")
+    .matches(/[0-9]/)
+    .withMessage("Le mot de passe doit contenir au moins un chiffre")
+    .matches(/[!@#$%^&*(),.?":{}|<>]/)
+    .withMessage("Le mot de passe doit contenir au moins un caractère spécial"),
+
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -385,27 +438,59 @@ app.post(
     }
 
     try {
-      const hashedPassword = await argon2.hash(req.body.password, {
+      const { username, password, googleAuthSecret } = req.body;
+
+      const hashedPassword = await argon2.hash(password, {
         type: argon2.argon2id,
       });
+
       db.query(
-        "INSERT INTO users (username, password, email) VALUES (?, ?, ?)",
-        [req.body.username, hashedPassword, req.body.email],
+        "INSERT INTO users (username, password, secret_2fa, is_2fa_enabled) VALUES (?, ?, ?, ?)",
+        [
+          username,
+          hashedPassword,
+          googleAuthSecret,
+          googleAuthSecret ? true : false,
+        ],
         (error, results) => {
           if (error) {
-            res
-              .status(500)
-              .send("Erreur lors de l'inscription de l'utilisateur");
+            if (error.code === "ER_DUP_ENTRY") {
+              return res
+                .status(400)
+                .json({ error: "Ce nom d'utilisateur existe déjà" });
+            } else {
+              console.error(
+                "Erreur lors de l'inscription de l'utilisateur:",
+                error
+              );
+              return res
+                .status(500)
+                .json({ error: "Erreur serveur lors de l'inscription" });
+            }
           } else {
             res.status(201).send("Utilisateur enregistré avec succès");
           }
         }
       );
-    } catch {
-      res.status(500).send("Erreur serveur");
+    } catch (error) {
+      console.error("Erreur serveur lors du hachage du mot de passe :", error);
+      res.status(500).json({ error: "Erreur serveur" });
     }
   }
 );
+
+async function checkUsernameExists(username) {
+  return new Promise((resolve, reject) => {
+    db.query(
+      "SELECT COUNT(*) as count FROM users WHERE username = ?",
+      [username],
+      (err, results) => {
+        if (err) reject(err);
+        else resolve(results[0].count > 0);
+      }
+    );
+  });
+}
 
 app.post("/api/postits", authenticateToken, (req, res) => {
   const { text, x, y, folderId } = req.body;

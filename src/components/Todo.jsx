@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -18,6 +18,7 @@ import {
   TextField,
   Typography,
   Link,
+  CircularProgress,
   Snackbar,
 } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
@@ -25,99 +26,128 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import { api } from "../axios";
 import MuiAlert from "@mui/material/Alert";
-import axios from "axios";
+import { useParams } from "react-router-dom";
 
 const API_URL = "/api/todos";
 
 function Todo() {
   const [todos, setTodos] = useState([]);
   const [newTodo, setNewTodo] = useState({
-    title: "",
-    description: "",
-    deadline: "",
+    Title: "",
+    Description: "",
+    Deadline: "",
+    Link: "",
   });
   const [editingTodoId, setEditingTodoId] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
-  const [link, setLink] = useState("");
   const [file, setFile] = useState(null);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [link, setLink] = useState("");
+  const [currentFolderId, setCurrentFolderId] = useState(null);
+
+  const { folderId } = useParams();
+  useEffect(() => {
+    setCurrentFolderId(folderId);
+  }, [folderId]);
+
+  useEffect(() => {
+    fetchTodos();
+  }, []);
+
+  const fetchTodos = async () => {
+    try {
+      setIsLoading(true);
+      const token = localStorage.getItem("token");
+      const response = await api.get(API_URL, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setTodos(response.data);
+    } catch (error) {
+      console.error("Error fetching todos:", error);
+      setError("Error loading tasks.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleOpenDialog = () => {
     setNewTodo({
-      title: "",
-      description: "",
-      deadline: "",
+      Title: "",
+      Description: "",
+      Deadline: "",
+      Link: "",
     });
-    setLink("");
     setFile(null);
     setEditingTodoId(null);
     setOpenDialog(true);
   };
 
+  const handleCloseDialog = () => {
+    setOpenDialog(false);
+    setNewTodo({
+      Title: "",
+      Description: "",
+      Deadline: "",
+      Link: "",
+    });
+    setFile(null);
+    setEditingTodoId(null);
+    setError(null);
+  };
+
   const handleAddOrUpdateTodo = async () => {
-    if (newTodo.title.trim() === "" || newTodo.title.length > 30) {
-      setSnackbarOpen(true);
+    if (newTodo.Title.trim() === "" || newTodo.Title.length > 30) {
+      setError("The title must be filled and not exceed 30 characters.");
       return;
     }
 
     const formData = new FormData();
-    formData.append("title", newTodo.title);
-    formData.append("description", newTodo.description);
-    formData.append("deadline", newTodo.deadline);
-    formData.append("link", link);
+    formData.append("Title", newTodo.Title);
+    formData.append("Description", newTodo.Description);
+    formData.append("Deadline", newTodo.Deadline);
+    formData.append("Link", newTodo.Link);
+    formData.append("FolderId", currentFolderId);
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const blob = new Blob([event.target.result], { type: file.type });
-        formData.append("file", blob, file.name);
-      };
-      reader.readAsArrayBuffer(file);
+      formData.append("File", file);
     }
 
-    // Récupérer le token JWT stocké localement
     const token = localStorage.getItem("token");
 
     try {
-      const config = {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // Add any other headers here if needed
-        },
-      };
-
+      setIsLoading(true);
       if (editingTodoId) {
-        await axios.put(`${API_URL}/${editingTodoId}`, formData, config);
+        await api.put(`${API_URL}/${editingTodoId}`, formData, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       } else {
-        await axios.post(API_URL, formData, config);
+        await api.post(API_URL, formData, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       }
-
-      // Update state logic
       handleCloseDialog();
+      fetchTodos();
     } catch (error) {
-      console.error("Error adding/updating todo", error);
+      console.error("Error adding/updating todo:", error);
+      setError(
+        error.response?.data?.error ||
+          "An error occurred while adding/updating the task."
+      );
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setNewTodo({
-      title: "",
-      description: "",
-      deadline: "",
-    });
-    setLink("");
-    setFile(null);
-    setEditingTodoId(null);
   };
 
   const handleEditTodo = (todo) => {
     setNewTodo({
-      title: todo.title,
-      description: todo.description,
-      deadline: todo.deadline,
+      Title: todo.Title,
+      Description: todo.Description,
+      Deadline: todo.Deadline,
     });
-    setLink(todo.link);
+    setLink(todo.Link);
     setFile(todo.file);
     setEditingTodoId(todo.id);
     setOpenDialog(true);
@@ -127,14 +157,14 @@ function Todo() {
     const token = localStorage.getItem("token");
 
     try {
-      await axios.delete(`${API_URL}/${id}`, {
+      await api.delete(`${API_URL}/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       setTodos(todos.filter((todo) => todo.id !== id));
     } catch (error) {
-      console.error("Erreur lors de la suppression de la todo", error);
+      console.error("Error deleting todo:", error);
     }
   };
 
@@ -144,14 +174,14 @@ function Todo() {
     const updatedTodo = { ...todo, isCompleted: !todo.isCompleted };
 
     try {
-      await axios.put(`${API_URL}/${id}`, updatedTodo, {
+      await api.put(`${API_URL}/${id}`, updatedTodo, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
       setTodos(todos.map((todo) => (todo.id === id ? updatedTodo : todo)));
     } catch (error) {
-      console.error("Erreur lors de la mise à jour de la todo", error);
+      console.error("Error updating todo:", error);
     }
   };
 
@@ -177,7 +207,7 @@ function Todo() {
         Add New Todo
       </Button>
 
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+      <Dialog open={openDialog} onClose={handleCloseDialog}>
         <DialogTitle>
           {editingTodoId ? "Edit Todo" : "Add New Todo"}
         </DialogTitle>
@@ -188,8 +218,8 @@ function Todo() {
             type="text"
             fullWidth
             variant="outlined"
-            value={newTodo.title}
-            onChange={(e) => setNewTodo({ ...newTodo, title: e.target.value })}
+            value={newTodo.Title}
+            onChange={(e) => setNewTodo({ ...newTodo, Title: e.target.value })}
           />
           <TextField
             margin="dense"
@@ -199,9 +229,9 @@ function Todo() {
             multiline
             rows={4}
             variant="outlined"
-            value={newTodo.description}
+            value={newTodo.Description}
             onChange={(e) =>
-              setNewTodo({ ...newTodo, description: e.target.value })
+              setNewTodo({ ...newTodo, Description: e.target.value })
             }
           />
           <TextField
@@ -210,9 +240,9 @@ function Todo() {
             type="date"
             fullWidth
             InputLabelProps={{ shrink: true }}
-            value={newTodo.deadline}
+            value={newTodo.Deadline}
             onChange={(e) =>
-              setNewTodo({ ...newTodo, deadline: e.target.value })
+              setNewTodo({ ...newTodo, Deadline: e.target.value })
             }
           />
           <TextField
@@ -234,6 +264,7 @@ function Todo() {
             {editingTodoId ? "Update" : "Add"}
           </Button>
         </DialogActions>
+        {isLoading && <CircularProgress />}
       </Dialog>
       <Snackbar
         open={snackbarOpen}
@@ -293,9 +324,9 @@ function TodoRow({ todo, onEdit, onDelete, onComplete }) {
           </IconButton>
         </TableCell>
         <TableCell component="th" scope="row">
-          {todo.title}
+          {todo.Title}
         </TableCell>
-        <TableCell align="right">{todo.deadline}</TableCell>
+        <TableCell align="right">{todo.Deadline}</TableCell>
         <TableCell align="right">
           <IconButton onClick={() => onEdit(todo)}>
             <EditIcon />
@@ -317,15 +348,15 @@ function TodoRow({ todo, onEdit, onDelete, onComplete }) {
               <Typography variant="h6" gutterBottom component="div">
                 Description
               </Typography>
-              <Typography>{todo.description}</Typography>
-              {todo.link && (
+              <Typography>{todo.Description}</Typography>
+              {todo.Link && (
                 <Typography>
                   <Link
-                    href={todo.link}
+                    href={todo.Link}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    {todo.link}
+                    {todo.Link}
                   </Link>
                 </Typography>
               )}
