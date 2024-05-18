@@ -11,7 +11,7 @@ function Drawlly() {
       <NavigationPanel />
       <Box sx={{ marginLeft: "300px", marginTop: "30px" }}>
         <div style={{ height: "800px" }}>
-          <Excalidraw />
+          <Excalidraw theme="dark" />
         </div>
       </Box>
     </>

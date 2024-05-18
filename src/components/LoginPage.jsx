@@ -10,6 +10,7 @@ import {
 } from "@mui/material";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { api } from "../axios";
+import axios from "axios";
 
 function LoginPage() {
   const [username, setUsername] = useState("");
@@ -21,20 +22,26 @@ function LoginPage() {
   const token = localStorage.getItem("token");
 
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get("token");
-    if (token) {
-      localStorage.setItem("token", token);
-      navigate("/");
-    }
-  }, [navigate]);
+    axios.interceptors.request.use(
+      (config) => {
+        const csrfToken = Cookies.get("_csrf");
+        if (csrfToken) {
+          config.headers["X-CSRF-Token"] = csrfToken;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+  }, [token]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError(null);
 
     try {
-      const response = await api.post("/api/login", { username, password });
+      const response = await api.post("/login", { username, password });
 
       if (response.data.requires2FA) {
         setShow2FA(true);
@@ -57,7 +64,7 @@ function LoginPage() {
     setError(null);
 
     try {
-      const response = await api.post("/api/login/validate-2fa", {
+      const response = await api.post("/login/validate-2fa", {
         username,
         code: twoFactorCode,
       });
