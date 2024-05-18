@@ -30,15 +30,17 @@ import { api } from "../axios";
 import MuiAlert from "@mui/material/Alert";
 import { useParams } from "react-router-dom";
 
-const API_URL = "/api/todos";
+const API_URL = "/todos";
 
 function Todo() {
+  const [currentFolderId, setCurrentFolderId] = useState(null);
   const [todos, setTodos] = useState([]);
   const [newTodo, setNewTodo] = useState({
     Title: "",
     Description: "",
     Deadline: "",
     Link: "",
+    currentFolderId: setCurrentFolderId,
   });
   const [editingTodoId, setEditingTodoId] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
@@ -47,22 +49,18 @@ function Todo() {
   const [isLoading, setIsLoading] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [link, setLink] = useState("");
-  const [currentFolderId, setCurrentFolderId] = useState(null);
 
   const { folderId } = useParams();
   useEffect(() => {
     setCurrentFolderId(folderId);
-  }, [folderId]);
-
-  useEffect(() => {
     fetchTodos();
-  }, []);
+  }, [folderId]);
 
   const fetchTodos = async () => {
     try {
       setIsLoading(true);
       const token = localStorage.getItem("token");
-      const response = await api.get(API_URL, {
+      const response = await api.get(`${API_URL}/${folderId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setTodos(response.data);
@@ -153,11 +151,13 @@ function Todo() {
     setOpenDialog(true);
   };
 
-  const handleDeleteTodo = async (id) => {
+  const deleteTodoId = todos.id;
+
+  const handleDeleteTodo = async (deleteTodoId) => {
     const token = localStorage.getItem("token");
 
     try {
-      await api.delete(`${API_URL}/${id}`, {
+      await api.delete(`${API_URL}/${deleteTodoId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -305,6 +305,8 @@ function Todo() {
 
 function TodoRow({ todo, onEdit, onDelete, onComplete }) {
   const [open, setOpen] = useState(false);
+  let deadlinetodo = todo.Deadline;
+  deadlinetodo = new Date(deadlinetodo).toLocaleDateString("fr-CA");
 
   return (
     <>
@@ -323,10 +325,14 @@ function TodoRow({ todo, onEdit, onDelete, onComplete }) {
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell component="th" scope="row">
+        <TableCell
+          component="th"
+          scope="row"
+          sx={{ maxHeight: "800", maxWidth: "800" }}
+        >
           {todo.Title}
         </TableCell>
-        <TableCell align="right">{todo.Deadline}</TableCell>
+        <TableCell align="right">{deadlinetodo}</TableCell>
         <TableCell align="right">
           <IconButton onClick={() => onEdit(todo)}>
             <EditIcon />

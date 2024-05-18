@@ -24,17 +24,20 @@ jobs:
       - name: Install sshpass
         run: sudo apt-get install -y sshpass
 
-      - name: Test connection with VPS
-        run: sshpass -p ${{ secrets.VPS_PASSWORD }} ssh -o StrictHostKeyChecking=no root@89.116.38.109 -p 22 "echo 'Connected to VPS'"
-
-      - name: Execute ls command on VPS
-        run: sshpass -p ${{ secrets.VPS_PASSWORD }} ssh -o StrictHostKeyChecking=no root@89.116.38.109 -p 22 "ls"
-
-      - name: Test if directory exists on VPS
-        run: sshpass -p ${{ secrets.VPS_PASSWORD }} ssh -o StrictHostKeyChecking=no root@89.116.38.109 -p 22 "mkdir -p /var/www/toolly"
-
       - name: Connect to server
         run: sshpass -p ${{ secrets.VPS_PASSWORD }} ssh -o StrictHostKeyChecking=no root@89.116.38.109 -p 22 "echo 'Connected'"
 
-      - name: Copy files
+      - name: Copy frontend files
         run: sshpass -p ${{ secrets.VPS_PASSWORD }} scp -r -o StrictHostKeyChecking=no -P 22 ./dist/* root@89.116.38.109:/var/www/toolly/
+
+      - name: Copy server files
+        run: sshpass -p ${{ secrets.VPS_PASSWORD }} scp -r -o StrictHostKeyChecking=no -P 22 ./server/* root@89.116.38.109:/var/www/toolly-server/server/
+
+      - name: Copy main server file
+        run: sshpass -p ${{ secrets.VPS_PASSWORD }} scp -r -o StrictHostKeyChecking=no -P 22 ./server.cjs root@89.116.38.109:/var/www/toolly-server/
+
+      - name: Copy package.json
+        run: sshpass -p ${{ secrets.VPS_PASSWORD }} scp -r -o StrictHostKeyChecking=no -P 22 ./package.json root@
+
+      - name: Restart backend service with PM2
+        run: sshpass -p ${{ secrets.VPS_PASSWORD }} ssh -o StrictHostKeyChecking=no root@89.116.38.109 -p 22 "cd /var/www/toolly-server && npm install && pm2 restart toolly"

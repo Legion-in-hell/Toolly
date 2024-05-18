@@ -94,7 +94,7 @@ const PostItBoard = () => {
   useEffect(() => {
     const fetchNotes = async () => {
       try {
-        const response = await api.get(`/api/postits/${folderId}`, {
+        const response = await api.get(`/postits/${folderId}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
@@ -110,7 +110,7 @@ const PostItBoard = () => {
   const addNote = async () => {
     try {
       const response = await api.post(
-        "/api/postits",
+        "/postits",
         {
           text: "Nouveau post-it",
           x: -300,
@@ -132,7 +132,7 @@ const PostItBoard = () => {
   const editNote = async (id, newText) => {
     try {
       await api.put(
-        `/api/postits/${id}`,
+        `/postits/${id}`,
         {
           text: newText,
           x: notes.find((note) => note.id === id).x,
@@ -156,7 +156,7 @@ const PostItBoard = () => {
   const moveNote = async (id, x, y) => {
     try {
       await api.put(
-        `/api/postits/${id}`,
+        `/postits/${id}`,
         {
           x: x,
           y: y,
@@ -179,7 +179,7 @@ const PostItBoard = () => {
 
   const deleteNote = async (id) => {
     try {
-      await api.delete(`/api/postits/${id}`, {
+      await api.delete(`/postits/${id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },

@@ -44,7 +44,7 @@ export default function NavigationPanel() {
 
   const fetchFolders = useCallback(async () => {
     try {
-      const response = await api.get(`/api/folders`, {
+      const response = await api.get(`/folders`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -82,7 +82,7 @@ export default function NavigationPanel() {
 
     try {
       await api.post(
-        `/api/newfolders`,
+        `/newfolders`,
         {
           name: `Dossier ${folders.length + 1}`,
           userId: userId,
@@ -110,7 +110,7 @@ export default function NavigationPanel() {
 
   const handleDeleteFolder = async (folderId) => {
     try {
-      await api.delete(`/api/folders/${folderId}`, {
+      await api.delete(`/folders/${folderId}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -133,7 +133,7 @@ export default function NavigationPanel() {
       });
     try {
       await api.put(
-        `/api/folders/${folderId}`,
+        `/folders/${folderId}`,
         { newName },
         {
           headers: {

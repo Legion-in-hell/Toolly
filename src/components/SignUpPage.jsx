@@ -44,7 +44,7 @@ function SignUpPage() {
 
   const handleGoogleAuthSecret = async () => {
     try {
-      const response = await api.get("/api/signup/google-authenticator");
+      const response = await api.get("/signup/google-authenticator");
       setGoogleAuthSecret(response.data.secret);
       setGoogleAuthQrCode(response.data.qrCodeUrl);
     } catch (error) {
@@ -61,7 +61,7 @@ function SignUpPage() {
 
   const checkUsername = async (username) => {
     try {
-      const response = await api.get(`/api/user/exists?username=${username}`);
+      const response = await api.get(`/user/exists?username=${username}`);
       return response.data.exists;
     } catch (error) {
       console.error("Error checking username:", error);
@@ -140,7 +140,7 @@ function SignUpPage() {
     }
 
     try {
-      const response = await api.post("/api/signup", {
+      const response = await api.post("/signup", {
         username,
         password,
         email: "",
