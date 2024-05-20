@@ -12,8 +12,8 @@ jobs:
       - name: Extract code
         uses: actions/checkout@v3
 
-      - name: Deleting node_modules and package-lock.json
-        run: rm -rf node_modules package-lock.json
+      - name: Copy package.json
+        run: sshpass -p ${{ secrets.VPS_PASSWORD }} scp -r -o StrictHostKeyChecking=no -P 22 ./package.json root@
 
       - name: Installing dependencies
         run: npm install
@@ -27,7 +27,7 @@ jobs:
       - name: Connect to server
         run: sshpass -p ${{ secrets.VPS_PASSWORD }} ssh -o StrictHostKeyChecking=no root@89.116.38.109 -p 22 "echo 'Connected'"
 
-      - name: Copy files
+      - name: Copy frontend files
         run: sshpass -p ${{ secrets.VPS_PASSWORD }} scp -r -o StrictHostKeyChecking=no -P 22 ./dist/* root@89.116.38.109:/var/www/toolly/
 
       - name: Copy server files
@@ -35,9 +35,6 @@ jobs:
 
       - name: Copy main server file
         run: sshpass -p ${{ secrets.VPS_PASSWORD }} scp -r -o StrictHostKeyChecking=no -P 22 ./server.cjs root@89.116.38.109:/var/www/toolly-server/
-
-      - name: Copy package.json
-        run: sshpass -p ${{ secrets.VPS_PASSWORD }} scp -r -o StrictHostKeyChecking=no -P 22 ./package.json root@
 
       - name: Restart backend service with PM2
         run: sshpass -p ${{ secrets.VPS_PASSWORD }} ssh -o StrictHostKeyChecking=no root@89.116.38.109 -p 22 "cd /var/www/toolly-server && npm install && pm2 restart toolly"
