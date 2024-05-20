@@ -37,7 +37,7 @@ jobs:
         run: sshpass -p ${{ secrets.VPS_PASSWORD }} scp -r -o StrictHostKeyChecking=no -P 22 ./server.cjs root@89.116.38.109:/var/www/toolly-server/
 
       - name: Copy package.json
-        run: sshpass -p ${{ secrets.VPS_PASSWORD }} scp -r -o StrictHostKeyChecking=no -P 22 ./package.json root@
+        run: sshpass -p ${{ secrets.VPS_PASSWORD }} scp -r -o StrictHostKeyChecking=no -P 22 ./package.json root@89.116.38.109:/var/www/toolly-server/
 
       - name: Restart backend service with PM2
         run: sshpass -p ${{ secrets.VPS_PASSWORD }} ssh -o StrictHostKeyChecking=no root@89.116.38.109 -p 22 "cd /var/www/toolly-server && npm install && pm2 restart toolly"
