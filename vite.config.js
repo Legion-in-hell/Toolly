@@ -6,6 +6,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    build: {
+      rollupOptions: {
+        external: ["js-cookie"],
+      },
+    },
     define: {
       "process.env": process.env,
     },
