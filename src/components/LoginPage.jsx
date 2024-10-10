@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { api } from "../axios";
-import Cookies from "js-cookie";
+import { setCookie, getCookie, eraseCookie } from "../utils/cookieUtils";
 
 function LoginPage() {
   const [username, setUsername] = useState("");
@@ -21,7 +21,7 @@ function LoginPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = getCookie("token");
     if (token) {
       navigate("/");
     }
@@ -37,7 +37,7 @@ function LoginPage() {
       if (response.data.requires2FA) {
         setShow2FA(true);
       } else if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
+        setCookie("token", response.data.token);
         navigate("/");
       }
     } catch (error) {
