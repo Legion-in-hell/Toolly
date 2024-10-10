@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Draggable from "react-draggable";
 import { TextField, IconButton, Paper, SvgIcon } from "@mui/material";
 import { useParams } from "react-router-dom";
@@ -7,18 +7,21 @@ import CloseIcon from "@mui/icons-material/Close";
 import postItSVG from "./assets/postit.svg";
 import { api } from "../axios";
 
-const PostIt = ({ note, onDrag, onDelete, onEdit }) => {
+const PostIt = React.memo(({ note, onDrag, onDelete, onEdit }) => {
   const [noteText, setNoteText] = useState(note.text);
 
-  const handleTextChange = (event) => {
-    const text = event.target.value;
-    const lineBreaks = text.split("\n").length;
+  const handleTextChange = useCallback(
+    (event) => {
+      const text = event.target.value;
+      const lineBreaks = text.split("\n").length;
 
-    if (text.length <= 112 && lineBreaks <= 7 && text !== note.text) {
-      setNoteText(text);
-      onEdit(note.id, text);
-    }
-  };
+      if (text.length <= 112 && lineBreaks <= 7 && text !== note.text) {
+        setNoteText(text);
+        onEdit(note.id, text);
+      }
+    },
+    [note.id, note.text, onEdit]
+  );
 
   const nodeRef = React.useRef(null);
 
@@ -73,41 +76,32 @@ const PostIt = ({ note, onDrag, onDelete, onEdit }) => {
       </Paper>
     </Draggable>
   );
-};
+});
 
 const PostItBoard = () => {
   const { folderId } = useParams();
-  <SvgIcon>
-    <svg
-      width="100"
-      height="100"
-      viewBox="0 0 100 100"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <rect width="100%" height="100%" fill="#ffeb3b" />
-      <text x="10" y="20" fontFamily="Verdana" fontSize="5"></text>
-    </svg>
-  </SvgIcon>;
-
   const [notes, setNotes] = useState([]);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchNotes = async () => {
-      try {
-        const response = await api.get(`/postits/${folderId}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        setNotes(response.data);
-      } catch (error) {
-        console.error("Error fetching notes:", error);
-      }
-    };
-    fetchNotes();
+  const fetchNotes = useCallback(async () => {
+    try {
+      const response = await api.get(`/postits/${folderId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setNotes(response.data);
+    } catch (error) {
+      console.error("Error fetching notes:", error);
+      setError("Failed to load notes. Please try again.");
+    }
   }, [folderId]);
 
-  const addNote = async () => {
+  useEffect(() => {
+    fetchNotes();
+  }, [fetchNotes]);
+
+  const addNote = useCallback(async () => {
     try {
       const response = await api.post(
         "/postits",
@@ -123,72 +117,86 @@ const PostItBoard = () => {
           },
         }
       );
-      setNotes([...notes, response.data]);
+      setNotes((prevNotes) => [...prevNotes, response.data]);
     } catch (error) {
       console.error("Error adding note:", error);
+      setError("Failed to add note. Please try again.");
     }
-  };
+  }, [folderId]);
 
-  const editNote = async (id, newText) => {
-    try {
-      await api.put(
-        `/postits/${id}`,
-        {
-          text: newText,
-          x: notes.find((note) => note.id === id).x,
-          y: notes.find((note) => note.id === id).y,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+  const editNote = useCallback(
+    async (id, newText) => {
+      try {
+        await api.put(
+          `/postits/${id}`,
+          {
+            text: newText,
+            x: notes.find((note) => note.id === id).x,
+            y: notes.find((note) => note.id === id).y,
           },
-        }
-      );
-      const updatedNotes = notes.map((note) =>
-        note.id === id ? { ...note, text: newText } : note
-      );
-      setNotes(updatedNotes);
-    } catch (error) {
-      console.error("Error updating note:", error);
-    }
-  };
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        setNotes((prevNotes) =>
+          prevNotes.map((note) =>
+            note.id === id ? { ...note, text: newText } : note
+          )
+        );
+      } catch (error) {
+        console.error("Error updating note:", error);
+        setError("Failed to update note. Please try again.");
+      }
+    },
+    [notes]
+  );
 
-  const moveNote = async (id, x, y) => {
-    try {
-      await api.put(
-        `/postits/${id}`,
-        {
-          x: x,
-          y: y,
-          text: notes.find((note) => note.id === id).text,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+  const moveNote = useCallback(
+    async (id, x, y) => {
+      try {
+        await api.put(
+          `/postits/${id}`,
+          {
+            x: x,
+            y: y,
+            text: notes.find((note) => note.id === id).text,
           },
-        }
-      );
-      const updatedNotes = notes.map((note) =>
-        note.id === id ? { ...note, x, y } : note
-      );
-      setNotes(updatedNotes);
-    } catch (error) {
-      console.error("Error moving note:", error);
-    }
-  };
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        setNotes((prevNotes) =>
+          prevNotes.map((note) => (note.id === id ? { ...note, x, y } : note))
+        );
+      } catch (error) {
+        console.error("Error moving note:", error);
+        setError("Failed to move note. Please try again.");
+      }
+    },
+    [notes]
+  );
 
-  const deleteNote = async (id) => {
+  const deleteNote = useCallback(async (id) => {
     try {
       await api.delete(`/postits/${id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       });
-      setNotes(notes.filter((note) => note.id !== id));
+      setNotes((prevNotes) => prevNotes.filter((note) => note.id !== id));
     } catch (error) {
       console.error("Error deleting note:", error);
+      setError("Failed to delete note. Please try again.");
     }
-  };
+  }, []);
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   return (
     <div>

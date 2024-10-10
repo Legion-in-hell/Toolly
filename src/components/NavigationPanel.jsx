@@ -1,46 +1,55 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
-  Typography,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
   Drawer as MuiDrawer,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  TextField,
+  Button,
 } from "@mui/material";
-import {
-  Routes,
-  Route,
-  Link,
-  useNavigate,
-  useLocation,
-} from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { api } from "../axios";
-import Dialog from "@mui/material/Dialog";
-import FolderIcon from "@mui/icons-material/Folder";
 import { useSnackbar } from "notistack";
-import AddBoxIcon from "@mui/icons-material/AddBox";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
-import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import LightbulbIcon from "@mui/icons-material/Lightbulb";
-import BrushIcon from "@mui/icons-material/Brush";
-import ExitToAppIcon from "@mui/icons-material/ExitToApp";
-import { styled } from "@mui/material/styles";
 import { jwtDecode } from "jwt-decode";
+import {
+  Folder as FolderIcon,
+  Add as AddBoxIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Dashboard as DashboardIcon,
+  Lightbulb as LightbulbIcon,
+  Brush as BrushIcon,
+  ExitToApp as ExitToAppIcon,
+} from "@mui/icons-material";
+import { styled } from "@mui/material/styles";
+
+const drawerWidth = 277;
+
+const Drawer = styled(MuiDrawer, {
+  shouldForwardProp: (prop) => prop !== "open",
+})(({ theme }) => ({
+  width: drawerWidth,
+  flexShrink: 0,
+  whiteSpace: "nowrap",
+  boxSizing: "border-box",
+  overflowX: "hidden",
+  [theme.breakpoints.up("sm")]: {
+    width: theme.spacing(9) + 1,
+  },
+}));
 
 export default function NavigationPanel() {
-  const location = useLocation();
   const [folders, setFolders] = useState([]);
   const [renamingFolder, setRenamingFolder] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
   const { enqueueSnackbar } = useSnackbar();
-  const token = localStorage.getItem("token");
 
   const fetchFolders = useCallback(async () => {
     try {
@@ -60,32 +69,27 @@ export default function NavigationPanel() {
 
   useEffect(() => {
     fetchFolders();
-  }, [fetchFolders, token]);
+  }, [fetchFolders]);
 
-  const getAuthenticatedUserId = () => {
+  const getAuthenticatedUserId = useMemo(() => {
     const token = localStorage.getItem("token");
     try {
       const decodedToken = jwtDecode(token);
       return decodedToken.userId;
     } catch (error) {
-      enqueueSnackbar("Erreur décodage Token", {
-        variant: "error",
-        anchorOrigin: { vertical: "top", horizontal: "right" },
-      });
+      enqueueSnackbar("Erreur décodage Token", { variant: "error" });
       console.error("Error decoding token:", error);
       return null;
     }
-  };
+  }, [enqueueSnackbar]);
 
   const handleAddFolder = async () => {
-    const userId = getAuthenticatedUserId();
-
     try {
       await api.post(
         `/newfolders`,
         {
           name: `Dossier ${folders.length + 1}`,
-          userId: userId,
+          userId: getAuthenticatedUserId,
         },
         {
           headers: {
@@ -95,10 +99,7 @@ export default function NavigationPanel() {
       );
       fetchFolders();
     } catch (error) {
-      enqueueSnackbar("Erreur de création d'un dossier", {
-        variant: "error",
-        anchorOrigin: { vertical: "top", horizontal: "right" },
-      });
+      enqueueSnackbar("Erreur de création d'un dossier", { variant: "error" });
       console.error("Error adding folder", error);
     }
   };
@@ -116,21 +117,21 @@ export default function NavigationPanel() {
         },
       });
       fetchFolders();
-      navigator.push("/");
-    } catch (error) {}
+      navigate("/");
+    } catch (error) {
+      enqueueSnackbar("Erreur de suppression du dossier", { variant: "error" });
+      console.error("Error deleting folder", error);
+    }
   };
 
   const handleRenameFolder = async (folderId, newName) => {
-    if (!newName)
-      return enqueueSnackbar("Nom de dossier vide", {
-        variant: "error",
-        anchorOrigin: { vertical: "top", horizontal: "right" },
-      });
-    if (newName.length > 12)
-      return enqueueSnackbar("Nom de dossier trop long", {
-        variant: "error",
-        anchorOrigin: { vertical: "top", horizontal: "right" },
-      });
+    if (!newName || newName.length > 12) {
+      enqueueSnackbar(
+        !newName ? "Nom de dossier vide" : "Nom de dossier trop long",
+        { variant: "error" }
+      );
+      return;
+    }
     try {
       await api.put(
         `/folders/${folderId}`,
@@ -144,28 +145,65 @@ export default function NavigationPanel() {
       fetchFolders();
       setRenamingFolder(null);
     } catch (error) {
+      enqueueSnackbar("Erreur de renommage d'un dossier", { variant: "error" });
       console.error("Error renaming folder", error);
-      enqueueSnackbar("Erreur de renommage d'un dossier", {
-        variant: "error",
-        anchorOrigin: { vertical: "top", horizontal: "right" },
-      });
     }
   };
 
-  const drawerWidth = 277;
-
-  const Drawer = styled(MuiDrawer, {
-    shouldForwardProp: (prop) => prop !== "open",
-  })(({ theme }) => ({
-    width: drawerWidth,
-    flexShrink: 0,
-    whiteSpace: "nowrap",
-    boxSizing: "border-box",
-    overflowX: "hidden",
-    [theme.breakpoints.up("sm")]: {
-      width: theme.spacing(9) + 1,
-    },
-  }));
+  const renderFolderList = () => (
+    <List>
+      {folders.map((folder) => (
+        <ListItem
+          key={folder.id}
+          button
+          component={Link}
+          to={`/folder/${folder.id}`}
+          sx={{
+            backgroundColor:
+              location.pathname === `/folder/${folder.id}`
+                ? "action.selected"
+                : "inherit",
+            "&:hover": { backgroundColor: "action.hover" },
+          }}
+        >
+          <ListItemIcon>
+            <FolderIcon />
+          </ListItemIcon>
+          <ListItemText primary={folder.name} />
+          <ListItemIcon
+            style={{
+              justifyContent: "flex-end",
+              position: "absolute",
+              right: "50px",
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setRenamingFolder(folder);
+            }}
+          >
+            <EditIcon />
+          </ListItemIcon>
+          <ListItemIcon
+            style={{ justifyContent: "flex-end", color: "red" }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleDeleteFolder(folder.id);
+            }}
+          >
+            <DeleteIcon />
+          </ListItemIcon>
+        </ListItem>
+      ))}
+      <ListItem button onClick={handleAddFolder}>
+        <ListItemIcon>
+          <AddBoxIcon />
+        </ListItemIcon>
+        <ListItemText primary="Créer un nouveau dossier" />
+      </ListItem>
+    </List>
+  );
 
   return (
     <Box sx={{}}>
@@ -178,9 +216,7 @@ export default function NavigationPanel() {
             sx={{
               backgroundColor:
                 location.pathname === "/" ? "action.selected" : "inherit",
-              "&:hover": {
-                backgroundColor: "action.hover",
-              },
+              "&:hover": { backgroundColor: "action.hover" },
             }}
           >
             <ListItemIcon>
@@ -189,55 +225,7 @@ export default function NavigationPanel() {
             <ListItemText primary="Dashboard" />
           </ListItem>
         </List>
-        <List>
-          {folders.map((folder) => (
-            <ListItem
-              key={folder.id}
-              button
-              component={Link}
-              to={`/folder/${folder.id}`}
-              sx={{
-                backgroundColor:
-                  location.pathname === `/folder/${folder.id}`
-                    ? "action.selected"
-                    : "inherit",
-                "&:hover": {
-                  backgroundColor:
-                    location.pathname === `/folder/${folder.id}`
-                      ? "action.hover"
-                      : "inherit",
-                },
-              }}
-            >
-              <ListItemIcon>
-                <FolderIcon />
-              </ListItemIcon>
-              <ListItemText primary={folder.name} />
-              <ListItemIcon
-                style={{
-                  justifyContent: "flex-end",
-                  position: "absolute",
-                  right: "50px",
-                }}
-                onClick={() => setRenamingFolder(folder)}
-              >
-                <EditIcon />
-              </ListItemIcon>
-              <ListItemIcon
-                style={{ justifyContent: "flex-end", color: "red" }}
-                onClick={() => handleDeleteFolder(folder.id)}
-              >
-                <DeleteIcon />
-              </ListItemIcon>
-            </ListItem>
-          ))}
-          <ListItem button onClick={handleAddFolder}>
-            <ListItemIcon>
-              <AddBoxIcon />
-            </ListItemIcon>
-            <ListItemText primary="Créer un nouveau dossier" />
-          </ListItem>
-        </List>
+        {renderFolderList()}
         <div
           style={{ display: "flex", flexDirection: "column", height: "100%" }}
         >
@@ -251,9 +239,7 @@ export default function NavigationPanel() {
                 location.pathname === "/ideabox"
                   ? "action.selected"
                   : "inherit",
-              "&:hover": {
-                backgroundColor: "action.hover",
-              },
+              "&:hover": { backgroundColor: "action.hover" },
             }}
           >
             <ListItemIcon>
@@ -270,9 +256,7 @@ export default function NavigationPanel() {
                 location.pathname === "/drawlly"
                   ? "action.selected"
                   : "inherit",
-              "&:hover": {
-                backgroundColor: "action.hover",
-              },
+              "&:hover": { backgroundColor: "action.hover" },
             }}
           >
             <ListItemIcon>
@@ -319,25 +303,6 @@ export default function NavigationPanel() {
           </Button>
         </DialogActions>
       </Dialog>
-
-      <Box
-        component="main"
-        sx={{ flexGrow: 1, p: 3, marginLeft: `${drawerWidth}px` }}
-      >
-        <Routes>
-          {folders.map((folder) => (
-            <Route
-              key={folder.id}
-              path={`/${folder.id}`}
-              element={
-                <Typography paragraph>
-                  Contenu du dossier: {folder.name}
-                </Typography>
-              }
-            />
-          ))}
-        </Routes>
-      </Box>
     </Box>
   );
 }

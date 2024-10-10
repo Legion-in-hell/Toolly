@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { api } from "../axios";
-import axios from "axios";
+import Cookies from "js-cookie";
 
 function LoginPage() {
   const [username, setUsername] = useState("");
@@ -19,22 +19,13 @@ function LoginPage() {
   const [error, setError] = useState(null);
   const [show2FA, setShow2FA] = useState(false);
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
 
   useEffect(() => {
-    axios.interceptors.request.use(
-      (config) => {
-        const csrfToken = Cookies.get("_csrf");
-        if (csrfToken) {
-          config.headers["X-CSRF-Token"] = csrfToken;
-        }
-        return config;
-      },
-      (error) => {
-        return Promise.reject(error);
-      }
-    );
-  }, [token]);
+    const token = localStorage.getItem("token");
+    if (token) {
+      navigate("/");
+    }
+  }, [navigate]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -50,12 +41,8 @@ function LoginPage() {
         navigate("/");
       }
     } catch (error) {
-      if (error.response && error.response.data && error.response.data.error) {
-        setError(error.response.data.error);
-      } else {
-        setError("An unknown error occurred.");
-      }
-      console.error("Login error:", error.response?.data || error);
+      setError(error.response?.data?.error || "An unknown error occurred.");
+      console.error("Login error:", error);
     }
   };
 
@@ -74,12 +61,8 @@ function LoginPage() {
         navigate("/");
       }
     } catch (error) {
-      if (error.response && error.response.data && error.response.data.error) {
-        setError(error.response.data.error);
-      } else {
-        setError("An unknown error occurred.");
-      }
-      console.error("2FA validation error:", error.response?.data || error);
+      setError(error.response?.data?.error || "An unknown error occurred.");
+      console.error("2FA validation error:", error);
     }
   };
 
@@ -96,52 +79,55 @@ function LoginPage() {
         <Typography component="h1" variant="h5">
           Connexion
         </Typography>
-        <form onSubmit={handleSubmit} sx={{ mt: 1 }}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Nom d'utilisateur"
-            autoComplete="username"
-            autoFocus
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            label="Mot de passe"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+        {error && <Alert severity="error">{error}</Alert>}
+        <form
+          onSubmit={show2FA ? handleTwoFactorSubmit : handleSubmit}
+          sx={{ mt: 1 }}
+        >
+          {!show2FA && (
+            <>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                label="Nom d'utilisateur"
+                autoComplete="username"
+                autoFocus
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                label="Mot de passe"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </>
+          )}
+          {show2FA && (
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              label="Code 2FA"
+              type="text"
+              value={twoFactorCode}
+              onChange={(e) => setTwoFactorCode(e.target.value)}
+            />
+          )}
           <Button
             type="submit"
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
           >
-            Se Connecter
+            {show2FA ? "Valider" : "Se Connecter"}
           </Button>
         </form>
-        {show2FA && (
-          <form onSubmit={handleTwoFactorSubmit} sx={{ mt: 1 }}>
-            <TextField
-              label="Code 2FA"
-              type="text"
-              value={twoFactorCode}
-              onChange={(e) => setTwoFactorCode(e.target.value)}
-              fullWidth
-              required
-            />
-            <Button type="submit" fullWidth variant="contained" color="primary">
-              Valider
-            </Button>
-            {error && <Alert severity="error">{error}</Alert>}
-          </form>
-        )}
         <Typography variant="body2" style={{ marginTop: "20px" }}>
           Pas encore de compte?{" "}
           <Link component={RouterLink} to="/signup">

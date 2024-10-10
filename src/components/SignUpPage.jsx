@@ -1,161 +1,116 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Link as RouterLink } from "react-router-dom";
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate, Link as RouterLink } from "react-router-dom";
 import { api } from "../axios";
-import Box from "@mui/material/Box";
 import {
+  Box,
   Container,
   Typography,
   TextField,
   Button,
   Link,
   LinearProgress,
+  Alert,
 } from "@mui/material";
 import DOMPurify from "dompurify";
 
 function SignUpPage() {
   const navigate = useNavigate();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
+  const [formData, setFormData] = useState({
+    username: "",
+    password: "",
+    confirmPassword: "",
+    twoFactorCode: "",
+  });
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [googleAuthSecret, setGoogleAuthSecret] = useState("");
   const [googleAuthQrCode, setGoogleAuthQrCode] = useState(null);
-  const [twoFactorCode, setTwoFactorCode] = useState("");
   const [is2FAEnabled, setIs2FAEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [usernameError, setUsernameError] = useState(null);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    checkUsernameAndDisplayError(username);
-  }, [username]);
-
-  const isPasswordStrong = (password) => {
-    return password.length >= 8;
-  };
-
-  const handlePasswordChange = (e) => {
-    const newPassword = e.target.value;
-    setPassword(newPassword);
-    setPasswordStrength(calculatePasswordStrength(newPassword));
-    updatePasswordStrengthColors(newPassword);
-  };
-
-  const handleGoogleAuthSecret = async () => {
-    try {
-      const response = await api.get("/signup/google-authenticator");
-      setGoogleAuthSecret(response.data.secret);
-      setGoogleAuthQrCode(response.data.qrCodeUrl);
-    } catch (error) {
-      console.error(
-        "Erreur lors de la génération du secret Google Authenticator:",
-        error
-      );
+  const handleInputChange = useCallback((event) => {
+    const { name, value } = event.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+    if (name === "password") {
+      setPasswordStrength(calculatePasswordStrength(value));
     }
-  };
+  }, []);
 
-  const handleTwoFactorCodeChange = (event) => {
-    setTwoFactorCode(event.target.value);
-  };
-
-  const checkUsername = async (username) => {
+  const checkUsername = useCallback(async (username) => {
     try {
       const response = await api.get(`/user/exists?username=${username}`);
       return response.data.exists;
     } catch (error) {
       console.error("Error checking username:", error);
+      throw error;
     }
-  };
+  }, []);
 
-  const checkUsernameAndDisplayError = async (username) => {
+  const handleGoogleAuthSecret = useCallback(async () => {
     try {
-      const userExists = await checkUsername(username);
-      setUsernameError(userExists ? "Ce nom d'utilisateur existe déjà" : null);
+      const response = await api.get("/signup/google-authenticator");
+      setGoogleAuthSecret(response.data.secret);
+      setGoogleAuthQrCode(response.data.qrCodeUrl);
     } catch (error) {
-      console.error(
-        "Erreur lors de la vérification du nom d'utilisateur :",
-        error
-      );
+      console.error("Error generating Google Authenticator secret:", error);
+      setError("Failed to generate 2FA secret. Please try again.");
     }
-  };
+  }, []);
 
   const calculatePasswordStrength = (password) => {
-    if (!password) return 0;
     let strength = 0;
-
-    const lengthCriteria = password.length >= 8;
-    const uppercaseCriteria = /[A-Z]/.test(password);
-    const numbersCriteria = /[0-9]/.test(password);
-    const specialCharCriteria = /[!@#$%^&*]/.test(password);
-
-    if (lengthCriteria) {
-      strength += 25;
-    }
-    if (uppercaseCriteria) {
-      strength += 25;
-    }
-    if (numbersCriteria) {
-      strength += 25;
-    }
-    if (specialCharCriteria) {
-      strength += 25;
-    }
-
+    if (password.length >= 8) strength += 25;
+    if (/[A-Z]/.test(password)) strength += 25;
+    if (/[0-9]/.test(password)) strength += 25;
+    if (/[!@#$%^&*]/.test(password)) strength += 25;
     return strength;
   };
 
-  const updatePasswordStrengthColors = (password) => {
-    const caracMiniElement = document.querySelector(".caracMini");
-    const majElement = document.querySelector(".maj");
-    const chiffreElement = document.querySelector(".chiffre");
-    const specialElement = document.querySelector(".special");
-
-    caracMiniElement.style.color = password.length >= 8 ? "green" : "grey";
-    majElement.style.color = /[A-Z]/.test(password) ? "green" : "grey";
-    chiffreElement.style.color = /[0-9]/.test(password) ? "green" : "grey";
-    specialElement.style.color = /[!@#$%^&*]/.test(password) ? "green" : "grey";
+  const validateForm = () => {
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match.");
+      return false;
+    }
+    if (passwordStrength < 75) {
+      setError("Password is not strong enough.");
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    setError(null);
     setIsLoading(true);
 
-    if (password !== confirmPassword) {
-      setPasswordError("Les mots de passe ne correspondent pas.");
-      setIsLoading(false);
-      return;
-    }
-
-    if (!isPasswordStrong(password)) {
-      setPasswordError("Le mot de passe n'est pas assez fort.");
-      setIsLoading(false);
-      return;
-    }
-
-    if (!isPasswordStrong(password)) {
-      setPasswordError("Le mot de passe n'est pas assez fort.");
+    if (!validateForm()) {
       setIsLoading(false);
       return;
     }
 
     try {
+      const userExists = await checkUsername(formData.username);
+      if (userExists) {
+        setError("Username already exists.");
+        setIsLoading(false);
+        return;
+      }
+
       const response = await api.post("/signup", {
-        username,
-        password,
-        email: "",
+        username: formData.username,
+        password: formData.password,
         googleAuthSecret: is2FAEnabled ? googleAuthSecret : null,
+        twoFactorCode: formData.twoFactorCode,
       });
-      console.log("Inscription réussie :", response.data);
+
+      console.log("Signup successful:", response.data);
       navigate("/login");
     } catch (error) {
-      if (error.response) {
-        // Gestion des erreurs plus précise ici
-        const errorMessage = error.response.data.error || "Erreur inconnue";
-        alert(`Erreur d'inscription : ${errorMessage}`);
-      } else {
-        console.error("Erreur lors de l'inscription : ", error);
-      }
+      setError(error.response?.data?.error || "An unknown error occurred.");
+      console.error("Signup error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -164,145 +119,101 @@ function SignUpPage() {
   return (
     <Container component="main" maxWidth="xs">
       <Box
-        style={{
-          marginTop: "15%",
+        sx={{
+          marginTop: 8,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
         }}
       >
-        <Typography component="h1" variant="h5" style={{ textAlign: "center" }}>
-          Inscription
+        <Typography component="h1" variant="h5">
+          Sign Up
         </Typography>
+        {error && <Alert severity="error">{error}</Alert>}
         <form onSubmit={handleSubmit} style={{ width: "100%", marginTop: 1 }}>
           <TextField
             variant="outlined"
             margin="normal"
             required
             fullWidth
-            label="Nom d'utilisateur"
+            label="Username"
+            name="username"
             autoFocus
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-          <Typography
-            color="error"
-            display={"none"}
-            className="userAlreadyExist"
-          >
-            Le nom d'utilisateur existe déjà
-          </Typography>
-          <TextField
-            variant="outlined"
-            margin="normal"
-            required
-            fullWidth
-            label="Mot de passe"
-            type="password"
-            value={password}
-            onChange={handlePasswordChange}
+            value={formData.username}
+            onChange={handleInputChange}
           />
           <TextField
             variant="outlined"
             margin="normal"
             required
             fullWidth
-            label="Confirmer le mot de passe"
+            label="Password"
             type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            name="password"
+            value={formData.password}
+            onChange={handleInputChange}
           />
-          {passwordError && (
-            <Typography color="error">{passwordError}</Typography>
-          )}
+          <TextField
+            variant="outlined"
+            margin="normal"
+            required
+            fullWidth
+            label="Confirm Password"
+            type="password"
+            name="confirmPassword"
+            value={formData.confirmPassword}
+            onChange={handleInputChange}
+          />
           <Box sx={{ mt: 2 }} mb={3}>
-            <Box mb={1}>
-              <Typography variant="caption">Force du mot de passe :</Typography>
-            </Box>
-            <Box mb={1}>
-              <Typography
-                variant="caption"
-                className="caracMini"
-                style={{ color: password.length >= 8 ? "green" : "grey" }}
-              >
-                - 8 caractères minimum
-              </Typography>
-            </Box>
-            <Box mb={1}>
-              <Typography
-                variant="caption"
-                className="maj"
-                style={{ color: /[A-Z]/.test(password) ? "green" : "grey" }}
-              >
-                - Au moins une majuscule
-              </Typography>
-            </Box>
-            <Box mb={1}>
-              <Typography
-                variant="caption"
-                className="chiffre"
-                style={{ color: /[0-9]/.test(password) ? "green" : "grey" }}
-              >
-                - Au moins un chiffre
-              </Typography>
-            </Box>
-            <Box mb={1}>
-              <Typography
-                variant="caption"
-                className="special"
-                style={{
-                  color: /[!@#$%^&*]/.test(password) ? "green" : "grey",
-                }}
-              >
-                - Au moins un caractère spécial : ! @ # $ % ^ & *
-              </Typography>
-            </Box>
-            <LinearProgress
-              variant="determinate"
-              value={passwordStrength}
-              style={{ backgroundColor: "red" }}
-            />
+            <Typography variant="caption">Password strength:</Typography>
+            <LinearProgress variant="determinate" value={passwordStrength} />
           </Box>
-          <div style={{ textAlign: "center" }}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => setIs2FAEnabled(!is2FAEnabled)}
-            >
-              {is2FAEnabled ? "Désactiver 2FA" : "Activer 2FA"}
-            </Button>
-            {is2FAEnabled && googleAuthQrCode && (
-              <Box mb={1} mt={1} alignContent={"center"}>
-                <img
-                  src={DOMPurify.sanitize(googleAuthQrCode)}
-                  alt="QR code pour Google Authenticator"
-                />
-                <TextField
-                  label="Code Google Authenticator"
-                  variant="outlined"
-                  value={twoFactorCode}
-                  onChange={handleTwoFactorCodeChange}
-                />
-              </Box>
-            )}
-          </div>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => setIs2FAEnabled(!is2FAEnabled)}
+          >
+            {is2FAEnabled ? "Disable 2FA" : "Enable 2FA"}
+          </Button>
+          {is2FAEnabled && (
+            <>
+              <Button onClick={handleGoogleAuthSecret}>
+                Generate 2FA Secret
+              </Button>
+              {googleAuthQrCode && (
+                <Box mb={1} mt={1}>
+                  <img
+                    src={DOMPurify.sanitize(googleAuthQrCode)}
+                    alt="QR code for Google Authenticator"
+                  />
+                  <TextField
+                    label="2FA Code"
+                    name="twoFactorCode"
+                    variant="outlined"
+                    value={formData.twoFactorCode}
+                    onChange={handleInputChange}
+                  />
+                </Box>
+              )}
+            </>
+          )}
           <Button
             type="submit"
             fullWidth
             variant="contained"
             color="primary"
-            style={{ margin: "24px 0px 16px" }}
+            disabled={isLoading}
+            sx={{ mt: 3, mb: 2 }}
           >
-            {" "}
-            S'inscrire
+            {isLoading ? "Signing Up..." : "Sign Up"}
           </Button>
-          <Typography variant="body2" style={{ textAlign: "center" }}>
-            Déjà inscrit?{" "}
-            <Link component={RouterLink} to="/login">
-              Se connecter
-            </Link>
-          </Typography>
         </form>
+        <Typography variant="body2">
+          Already have an account?{" "}
+          <Link component={RouterLink} to="/login">
+            Log In
+          </Link>
+        </Typography>
       </Box>
     </Container>
   );

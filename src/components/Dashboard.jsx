@@ -1,10 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { Box } from "@mui/material";
-import TopBar from "./TopBar";
-import NavigationPanel from "./NavigationPanel";
-import { api } from "../axios";
-import { format } from "date-fns";
+import React, { useEffect, useState, useCallback } from "react";
 import {
+  Box,
   Table,
   TableBody,
   TableCell,
@@ -16,39 +12,84 @@ import {
   Collapse,
   Typography,
   Link,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
-import EditIcon from "@mui/icons-material/Edit";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import DeleteIcon from "@mui/icons-material/Delete";
+import {
+  KeyboardArrowDown,
+  KeyboardArrowUp,
+  Edit as EditIcon,
+  CheckCircle as CheckCircleIcon,
+  Delete as DeleteIcon,
+} from "@mui/icons-material";
+import { format } from "date-fns";
+import TopBar from "./TopBar";
+import NavigationPanel from "./NavigationPanel";
 import PostItBoard from "./PostIt";
+import { api } from "../axios";
 
 function Dashboard() {
   const [todos, setTodos] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const token = localStorage.getItem("token");
+
+  const fetchTodos = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    try {
+      setIsLoading(true);
+      const response = await api.get("/todos", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const sortedTodos = response.data.sort((a, b) =>
+        a.Deadline.localeCompare(b.Deadline)
+      );
+      setTodos(sortedTodos);
+    } catch (error) {
+      console.error("Error fetching todos:", error);
+      setError("Une erreur est survenue lors du chargement des tâches.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchTodos = async () => {
-      try {
-        setIsLoading(true);
-        const response = await api.get("/todos", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const sortedTodos = response.data.sort((a, b) => {
-          return a.Deadline.localeCompare(b.Deadline);
-        });
-        setTodos(sortedTodos);
-      } catch (error) {
-        console.error("Error fetching todos:", error);
-        setError("Une erreur est survenue lors du chargement des tâches.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
     fetchTodos();
+  }, [fetchTodos]);
+
+  const handleEdit = useCallback((todo) => {
+    // Implement edit functionality
+    console.log("Edit todo:", todo);
+  }, []);
+
+  const handleComplete = useCallback(
+    async (id) => {
+      try {
+        const todo = todos.find((t) => t.TodoID === id);
+        const updatedTodo = { ...todo, isCompleted: !todo.isCompleted };
+        await api.put(`/todos/${id}`, updatedTodo, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+        setTodos((prevTodos) =>
+          prevTodos.map((t) => (t.TodoID === id ? updatedTodo : t))
+        );
+      } catch (error) {
+        console.error("Error completing todo:", error);
+        setError("Une erreur est survenue lors de la mise à jour de la tâche.");
+      }
+    },
+    [todos]
+  );
+
+  const handleDelete = useCallback(async (id) => {
+    try {
+      await api.delete(`/todos/${id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      setTodos((prevTodos) => prevTodos.filter((t) => t.TodoID !== id));
+    } catch (error) {
+      console.error("Error deleting todo:", error);
+      setError("Une erreur est survenue lors de la suppression de la tâche.");
+    }
   }, []);
 
   return (
@@ -57,14 +98,12 @@ function Dashboard() {
       <NavigationPanel />
       <Box sx={{ display: "flex", marginLeft: "300px", marginTop: "30px" }}>
         <div style={{ display: "flex", flex: 1, height: "100vh" }}>
-          <div
-            style={{
-              flex: 1,
-              paddingRight: "2px",
-              borderRight: "0px solid #ccc",
-            }}
-          >
-            <Box sx={{ display: "flex" }}>
+          <div style={{ flex: 1, paddingRight: "2px" }}>
+            {isLoading ? (
+              <CircularProgress />
+            ) : error ? (
+              <Alert severity="error">{error}</Alert>
+            ) : (
               <TableContainer component={Paper}>
                 <Table stickyHeader aria-label="todo table">
                   <TableHead>
@@ -72,24 +111,30 @@ function Dashboard() {
                       <TableCell />
                       <TableCell>Titre</TableCell>
                       <TableCell align="right">Échéance</TableCell>
-                      <TableCell align="right">Actions</TableCell>{" "}
+                      <TableCell align="right">Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {todos.map((todo) => (
-                      <TodoRow key={todo.TodoID} todo={todo} />
+                      <TodoRow
+                        key={todo.TodoID}
+                        todo={todo}
+                        onEdit={handleEdit}
+                        onComplete={handleComplete}
+                        onDelete={handleDelete}
+                      />
                     ))}
                   </TableBody>
                 </Table>
               </TableContainer>
-            </Box>
+            )}
           </div>
           <div
             style={{
               flex: 1,
               marginRight: "10px",
-              justifyContent: "flex-end",
               display: "flex",
+              justifyContent: "flex-end",
             }}
           >
             <PostItBoard />
@@ -100,23 +145,17 @@ function Dashboard() {
   );
 }
 
-function TodoRow({ todo }) {
+const TodoRow = React.memo(({ todo, onEdit, onComplete, onDelete }) => {
   const [open, setOpen] = useState(false);
-
-  let deadlinetodo;
-  if (todo.Deadline) {
-    deadlinetodo = format(new Date(todo.Deadline), "dd/MM/yyyy");
-  }
+  const deadlinetodo = todo.Deadline
+    ? format(new Date(todo.Deadline), "dd/MM/yyyy")
+    : "";
 
   return (
     <>
-      <TableRow sx={{ "& > *": { borderBottom: "unset" }, id: "todo-row" }}>
+      <TableRow sx={{ "& > *": { borderBottom: "unset" } }}>
         <TableCell>
-          <IconButton
-            aria-label="expand row"
-            size="small"
-            onClick={() => setOpen(!open)}
-          >
+          <IconButton size="small" onClick={() => setOpen(!open)}>
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
@@ -128,12 +167,12 @@ function TodoRow({ todo }) {
           <IconButton onClick={() => onEdit(todo)}>
             <EditIcon />
           </IconButton>
-          <IconButton onClick={() => onComplete(todo.id)}>
+          <IconButton onClick={() => onComplete(todo.TodoID)}>
             <CheckCircleIcon
               color={todo.isCompleted ? "primary" : "disabled"}
             />
           </IconButton>
-          <IconButton onClick={() => onDelete(todo.id)}>
+          <IconButton onClick={() => onDelete(todo.TodoID)}>
             <DeleteIcon />
           </IconButton>
         </TableCell>
@@ -164,6 +203,6 @@ function TodoRow({ todo }) {
       </TableRow>
     </>
   );
-}
+});
 
 export default Dashboard;

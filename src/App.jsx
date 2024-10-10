@@ -1,16 +1,24 @@
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import React, { Suspense, lazy, useEffect } from "react";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { SnackbarProvider } from "notistack";
+import CircularProgress from "@mui/material/CircularProgress";
 import "./App.css";
 import { PomodoroProvider } from "./components/PomodoroContext";
-import LoginPage from "./components/LoginPage";
-import Dashboard from "./components/Dashboard";
-import SignUpPage from "./components/SignUpPage";
-import Drawlly from "./components/Drawlly";
-import IdeaBox from "./components/IdeaBox";
-import FolderPage from "./components/FolderPage";
+
+// Lazy load components
+const LoginPage = lazy(() => import("./components/LoginPage"));
+const SignUpPage = lazy(() => import("./components/SignUpPage"));
+const Dashboard = lazy(() => import("./components/Dashboard"));
+const Drawlly = lazy(() => import("./components/Drawlly"));
+const IdeaBox = lazy(() => import("./components/IdeaBox"));
+const FolderPage = lazy(() => import("./components/FolderPage"));
 
 const darkTheme = createTheme({
   palette: {
@@ -18,16 +26,20 @@ const darkTheme = createTheme({
   },
 });
 
+// Protected Route component
+const ProtectedRoute = ({ children }) => {
+  const isAuth = localStorage.getItem("JWT_TOKEN");
+  if (!isAuth) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
 function App() {
-  React.useEffect(() => {
+  useEffect(() => {
     const isAuth = localStorage.getItem("JWT_TOKEN");
-    if (
-      (!isAuth && window.location.pathname !== "/login") ||
-      (window.location.pathname !== "/signup" && !isAuth)
-    ) {
-      if (window.location.pathname !== "/login") {
-        window.location.replace("/login");
-      }
+    if (!isAuth && !["/login", "/signup"].includes(window.location.pathname)) {
+      window.location.replace("/login");
     }
   }, []);
 
@@ -37,15 +49,52 @@ function App() {
         <PomodoroProvider>
           <CssBaseline />
           <Router>
-            <Routes>
-              <Route path="/login/*" element={<LoginPage />} />
-              <Route path="/signup/*" element={<SignUpPage />} />
-              <Route path="/*" element={<Dashboard />} />
-              <Route path="/dashboard/*" element={<Dashboard />} />
-              <Route path="/drawlly/*" element={<Drawlly />} />
-              <Route path="/ideabox/*" element={<IdeaBox />} />
-              <Route path="/folder/:folderId/*" element={<FolderPage />} />
-            </Routes>
+            <Suspense fallback={<CircularProgress />}>
+              <Routes>
+                <Route path="/login/*" element={<LoginPage />} />
+                <Route path="/signup/*" element={<SignUpPage />} />
+                <Route
+                  path="/*"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/dashboard/*"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/drawlly/*"
+                  element={
+                    <ProtectedRoute>
+                      <Drawlly />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/ideabox/*"
+                  element={
+                    <ProtectedRoute>
+                      <IdeaBox />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/folder/:folderId/*"
+                  element={
+                    <ProtectedRoute>
+                      <FolderPage />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </Suspense>
           </Router>
         </PomodoroProvider>
       </SnackbarProvider>

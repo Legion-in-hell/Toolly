@@ -1,5 +1,11 @@
-import React, { createContext, useState, useEffect, useContext } from "react";
-import MP3 from "./assets/alarm.mp3"; // Assurez-vous que le chemin vers le fichier MP3 est correct
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+} from "react";
+import MP3 from "./assets/alarm.mp3";
 
 const PomodoroContext = createContext();
 
@@ -14,6 +20,22 @@ export const PomodoroProvider = ({ children }) => {
   const [workMinutes, setWorkMinutes] = useState(25);
   const [breakMinutes, setBreakMinutes] = useState(5);
 
+  const playAlarm = useCallback(() => {
+    if (soundOn) {
+      const audio = new Audio(MP3);
+      audio
+        .play()
+        .catch((error) => console.error("Error playing audio:", error));
+    }
+  }, [soundOn]);
+
+  const switchMode = useCallback(() => {
+    playAlarm();
+    setIsBreak((prevIsBreak) => !prevIsBreak);
+    setMinutes(isBreak ? workMinutes : breakMinutes);
+    setSeconds(0);
+  }, [isBreak, workMinutes, breakMinutes, playAlarm]);
+
   useEffect(() => {
     let interval = null;
 
@@ -22,60 +44,58 @@ export const PomodoroProvider = ({ children }) => {
         if (seconds === 0) {
           if (minutes === 0) {
             clearInterval(interval);
-            if (soundOn) {
-              const audio = new Audio(MP3);
-              audio.play();
-            }
-            if (isBreak) {
-              setIsBreak(false);
-              setMinutes(workMinutes);
-            } else {
-              setIsBreak(true);
-              setMinutes(breakMinutes);
-            }
+            switchMode();
           } else {
-            setMinutes(minutes - 1);
+            setMinutes((prevMinutes) => prevMinutes - 1);
             setSeconds(59);
           }
         } else {
-          setSeconds(seconds - 1);
+          setSeconds((prevSeconds) => prevSeconds - 1);
         }
       }, 1000);
     } else {
       clearInterval(interval);
     }
+
     return () => clearInterval(interval);
-  }, [isActive, seconds, minutes, soundOn, isBreak, workMinutes, breakMinutes]);
+  }, [isActive, seconds, minutes, switchMode]);
 
-  const toggleTimer = () => {
-    setIsActive(!isActive);
-  };
+  const toggleTimer = useCallback(() => {
+    setIsActive((prevIsActive) => !prevIsActive);
+  }, []);
 
-  const resetTimer = () => {
+  const resetTimer = useCallback(() => {
     setIsActive(false);
     setMinutes(workMinutes);
     setSeconds(0);
-  };
+    setIsBreak(false);
+  }, [workMinutes]);
 
-  const toggleSound = () => {
-    setSoundOn(!soundOn);
-  };
+  const toggleSound = useCallback(() => {
+    setSoundOn((prevSoundOn) => !prevSoundOn);
+  }, []);
 
-  const updateWorkMinutes = (newMinutes) => {
-    setWorkMinutes(newMinutes);
-    if (!isActive) {
-      setMinutes(newMinutes);
-      setSeconds(0);
-    }
-  };
+  const updateWorkMinutes = useCallback(
+    (newMinutes) => {
+      setWorkMinutes(newMinutes);
+      if (!isActive && !isBreak) {
+        setMinutes(newMinutes);
+        setSeconds(0);
+      }
+    },
+    [isActive, isBreak]
+  );
 
-  const updateBreakMinutes = (newMinutes) => {
-    setBreakMinutes(newMinutes);
-    if (isActive && isBreak) {
-      setMinutes(newMinutes);
-      setSeconds(0);
-    }
-  };
+  const updateBreakMinutes = useCallback(
+    (newMinutes) => {
+      setBreakMinutes(newMinutes);
+      if (!isActive && isBreak) {
+        setMinutes(newMinutes);
+        setSeconds(0);
+      }
+    },
+    [isActive, isBreak]
+  );
 
   return (
     <PomodoroContext.Provider
@@ -92,8 +112,6 @@ export const PomodoroProvider = ({ children }) => {
         toggleSound,
         updateWorkMinutes,
         updateBreakMinutes,
-        setBreakMinutes,
-        setWorkMinutes,
       }}
     >
       {children}

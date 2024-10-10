@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   AppBar,
@@ -12,10 +12,12 @@ import {
   DialogTitle,
   TextField,
 } from "@mui/material";
-import VolumeOffIcon from "@mui/icons-material/VolumeOff";
-import VolumeUpIcon from "@mui/icons-material/VolumeUp";
-import SettingsIcon from "@mui/icons-material/Settings";
-import { usePomodoro } from "./PomodoroContext"; // Assurez-vous que le chemin est correct
+import {
+  VolumeOff as VolumeOffIcon,
+  VolumeUp as VolumeUpIcon,
+  Settings as SettingsIcon,
+} from "@mui/icons-material";
+import { usePomodoro } from "./PomodoroContext";
 
 const TopBar = () => {
   const {
@@ -29,105 +31,81 @@ const TopBar = () => {
     breakMinutes,
     updateWorkMinutes,
     updateBreakMinutes,
-    setWorkMinutes,
-    setBreakMinutes,
   } = usePomodoro();
 
-  const [date, setDate] = React.useState("");
-  const [time, setTime] = React.useState("");
-  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [tempWorkMinutes, setTempWorkMinutes] = useState(workMinutes);
+  const [tempBreakMinutes, setTempBreakMinutes] = useState(breakMinutes);
 
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      const now = new Date();
-      setDate(now.toLocaleDateString());
-      setTime(now.toLocaleTimeString());
-    }, 1000);
-
-    return () => clearInterval(interval);
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentDateTime(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
-  const formatTime = (time) => {
+  const formatTime = useCallback((time) => {
     return String(time).padStart(2, "0");
-  };
+  }, []);
 
-  const openSettings = () => {
+  const formattedDate = useMemo(() => {
+    return currentDateTime.toLocaleDateString();
+  }, [currentDateTime]);
+
+  const formattedTime = useMemo(() => {
+    return currentDateTime.toLocaleTimeString();
+  }, [currentDateTime]);
+
+  const handleSettingsOpen = useCallback(() => {
+    setTempWorkMinutes(workMinutes);
+    setTempBreakMinutes(breakMinutes);
     setIsSettingsOpen(true);
-  };
+  }, [workMinutes, breakMinutes]);
 
-  const handleSettingsClose = () => {
+  const handleSettingsClose = useCallback(() => {
     setIsSettingsOpen(false);
-  };
+  }, []);
 
-  const handleSettingsSave = () => {
-    updateWorkMinutes(parseInt(workMinutes, 10));
-    updateBreakMinutes(parseInt(breakMinutes, 10));
+  const handleSettingsSave = useCallback(() => {
+    updateWorkMinutes(parseInt(tempWorkMinutes, 10));
+    updateBreakMinutes(parseInt(tempBreakMinutes, 10));
     setIsSettingsOpen(false);
-  };
+  }, [
+    tempWorkMinutes,
+    tempBreakMinutes,
+    updateWorkMinutes,
+    updateBreakMinutes,
+  ]);
 
   const drawerWidth = 277;
 
   return (
-    <Box sx={{}}>
-      <AppBar position="fixed" sx={{ marginLeft: drawerWidth }}>
-        <Toolbar style={{ marginLeft: drawerWidth }}>
-          <Typography variant="h6">Dashboard</Typography>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              width: "100%",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-end",
-              }}
-            >
-              <Box display="flex" alignItems="center">
-                <Typography variant="h4">
-                  {formatTime(minutes)}:{formatTime(seconds)}
-                </Typography>
-                <Box ml={2}>
-                  <IconButton onClick={openSettings}>
-                    <SettingsIcon />
-                  </IconButton>
-                  <IconButton onClick={toggleSound}>
-                    {soundOn ? <VolumeUpIcon /> : <VolumeOffIcon />}
-                  </IconButton>
-                  <Button
-                    onClick={toggleTimer}
-                    variant="contained"
-                    color="primary"
-                  >
-                    {isActive ? "Pause" : "Start"}
-                  </Button>
-                </Box>
-              </Box>
-            </div>
-          </div>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              width: "100%",
-            }}
-          >
-            {" "}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                position: "fixed",
-                top: 8,
-              }}
-            >
-              <Typography variant="body1">Time: {time}</Typography>
-              <Typography variant="body1">Date: {date}</Typography>
-            </div>
-          </div>
+    <Box sx={{ flexGrow: 1 }}>
+      <AppBar
+        position="fixed"
+        sx={{ marginLeft: drawerWidth, width: `calc(100% - ${drawerWidth}px)` }}
+      >
+        <Toolbar>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+            Dashboard
+          </Typography>
+          <Box display="flex" alignItems="center">
+            <Typography variant="h4" sx={{ mr: 2 }}>
+              {formatTime(minutes)}:{formatTime(seconds)}
+            </Typography>
+            <IconButton onClick={handleSettingsOpen} color="inherit">
+              <SettingsIcon />
+            </IconButton>
+            <IconButton onClick={toggleSound} color="inherit">
+              {soundOn ? <VolumeUpIcon /> : <VolumeOffIcon />}
+            </IconButton>
+            <Button onClick={toggleTimer} variant="contained" color="secondary">
+              {isActive ? "Pause" : "Start"}
+            </Button>
+          </Box>
+          <Box sx={{ ml: 2, textAlign: "right" }}>
+            <Typography variant="body2">{formattedTime}</Typography>
+            <Typography variant="body2">{formattedDate}</Typography>
+          </Box>
         </Toolbar>
       </AppBar>
       <Dialog open={isSettingsOpen} onClose={handleSettingsClose}>
@@ -138,16 +116,16 @@ const TopBar = () => {
             type="number"
             fullWidth
             margin="dense"
-            value={workMinutes}
-            onChange={(e) => setWorkMinutes(e.target.value)}
+            value={tempWorkMinutes}
+            onChange={(e) => setTempWorkMinutes(e.target.value)}
           />
           <TextField
             label="Break Minutes"
             type="number"
             fullWidth
             margin="dense"
-            value={breakMinutes}
-            onChange={(e) => setBreakMinutes(e.target.value)}
+            value={tempBreakMinutes}
+            onChange={(e) => setTempBreakMinutes(e.target.value)}
           />
         </DialogContent>
         <DialogActions>
@@ -161,4 +139,4 @@ const TopBar = () => {
   );
 };
 
-export default TopBar;
+export default React.memo(TopBar);

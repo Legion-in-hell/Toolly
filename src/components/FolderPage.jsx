@@ -4,8 +4,11 @@ import PostItBoard from "./PostIt";
 import TopBar from "./TopBar";
 import NavigationPanel from "./NavigationPanel";
 import Todo from "./Todo";
+import { useParams } from "react-router-dom";
 
 const FolderPage = () => {
+  const { folderId } = useParams();
+
   return (
     <>
       <TopBar />
@@ -19,7 +22,7 @@ const FolderPage = () => {
               borderRight: "0px solid #ccc",
             }}
           >
-            <Todo />
+            <Todo folderId={folderId} />
           </div>
           <div
             style={{
@@ -29,7 +32,7 @@ const FolderPage = () => {
               display: "flex",
             }}
           >
-            <PostItBoard />
+            <PostItBoard folderId={folderId} />
           </div>
         </div>
       </Box>
@@ -37,4 +40,4 @@ const FolderPage = () => {
   );
 };
 
-export default FolderPage;
+export default React.memo(FolderPage);
