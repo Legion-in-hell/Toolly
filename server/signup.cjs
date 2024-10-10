@@ -36,6 +36,21 @@ const checkUsernameExists = async (username) => {
   return rows[0].count > 0;
 };
 
+router.get("/api/user/exists", async (req, res) => {
+  const { username } = req.query;
+  try {
+    const [rows] = await db.execute(
+      "SELECT COUNT(*) as count FROM users WHERE username = ?",
+      [username]
+    );
+    const exists = rows[0].count > 0;
+    res.json({ exists });
+  } catch (error) {
+    console.error("Error checking username:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.post(
   "/api/signup",
   body("username")
@@ -84,12 +99,10 @@ router.post(
         ]
       );
 
-      res
-        .status(201)
-        .json({
-          message: "Utilisateur enregistré avec succès",
-          userId: result.insertId,
-        });
+      res.status(201).json({
+        message: "Utilisateur enregistré avec succès",
+        userId: result.insertId,
+      });
     } catch (error) {
       console.error("Erreur lors de l'inscription de l'utilisateur:", error);
       if (error.code === "ER_DUP_ENTRY") {
